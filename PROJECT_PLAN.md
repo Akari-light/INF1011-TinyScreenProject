@@ -6,9 +6,9 @@ The team's central implementation plan. Keep requirements, tasks, responsibiliti
 
 ## Current position
 
-- The team selected **TraceDeck**, a pocket attack-and-deception lab. The proposed core and its acceptance criteria are ready for team review. Implementation and physical feasibility checks are pending.
+- The team selected **TraceDeck**, a pocket attack-and-deception lab. The proposed core and its acceptance criteria are ready for team review. The vendor OLED baseline passed on Windows and USB firmware work is in progress.
 - **Optional if time allows:** AuthenticConfig and the expanded honeypot + Rubber Ducky-style USB + IoT toolkit.
-- Seven members have TinyScreen+ kits and laptops. One Wi-Fi TinyShield is already on loan. Owners, internal dates, and exact toolchain versions are pending.
+- Seven members have TinyScreen+ kits and laptops. One Wi-Fi TinyShield is already on loan. Owners and internal dates are pending. The verified USB baseline toolchain versions are in [README.md](README.md).
 - Next: assign work, verify a harmless USB keyboard action and a direct Wi-Fi round trip on the actual boards, then integrate the two paths with the laptop decoy.
 
 ## Assignment baseline
@@ -112,11 +112,11 @@ Statuses: Todo, In progress, Blocked, Review, Done. Give each task one accountab
 | --- | --- | --- | --- | --- | --- | --- |
 | T01 | Review foundation and record agreement | TBD / TBD | TBD | - | Review | Initial documents prepared |
 | T02 | Confirm board revisions, Wi-Fi loan access, data cables, and the test network | TBD / TBD | TBD | - | In progress | Kit models and one Wi-Fi loan reported |
-| T03 | Verify vendor example build/upload; record exact versions and setup | TBD / TBD | TBD | T02 | Todo | - |
+| T03 | Verify vendor example build/upload; record exact versions and setup | TBD / TBD | TBD | T02 | Review | Flash verified and OLED loop observed by Arvin on Windows, 8 Nov 2026. See [README.md](README.md). |
 | T04 | Configure GitHub collaboration; demonstrate a reviewed PR | TBD / TBD | TBD | T01 | Todo | - |
 | T05 | Agree roster, responsibilities, and internal milestone dates | TBD / TBD | TBD | T01 | Todo | - |
 | T06 | Record TraceDeck selection and review H01–H05 and the run/event interface | TBD / TBD | TBD | T05 | Review | Team selected TraceDeck |
-| T07 | Verify the physical HID path, then implement arming and the fixed sequence (H01) | TBD / TBD | TBD | T03, T06 | Todo | - |
+| T07 | Verify arming, cancellation, and timeout, then test the fixed marker over USB HID (H01) | TBD / TBD | TBD | T03, T06 | In progress | Startup in SAFE, arming, cancellation, and timeout verified by Arvin on TinyScreen+, 8 Nov 2026. USB marker verification pending. |
 | T08 | Verify direct Wi-Fi reachability, then implement the request and feedback path (H02) | TBD / TBD | TBD | T03, T06 | Todo | - |
 | T09 | Implement the lab input app, mock IoT decoy, and independent event records (H03) | TBD / TBD | TBD | T06 | Todo | - |
 | T10 | Integrate both nodes and build the live correlation dashboard (H04) | TBD / TBD | TBD | T07, T08, T09 | Todo | - |

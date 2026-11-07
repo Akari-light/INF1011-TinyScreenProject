@@ -2,7 +2,7 @@
 
 TraceDeck is an ICT1011 TinyCircuits security lab. Two TinyScreen+ nodes run controlled USB keyboard and Wi-Fi interactions against a laptop-hosted IoT decoy. A live timeline links each lab run to its recorded events.
 
-**Current phase:** scope review and hardware feasibility planning. Implementation is pending.
+USB hardware feasibility is in progress. The first firmware block opens the USB Test screen at startup.
 
 See [PROJECT_PLAN.md](PROJECT_PLAN.md) for requirements, architecture decisions, responsibilities, milestones, task status, and team working conventions.
 
@@ -13,19 +13,60 @@ See [PROJECT_PLAN.md](PROJECT_PLAN.md) for requirements, architecture decisions,
 | USB keyboard node | TinyScreen+ ASM2022 with a USB data cable |
 | Wi-Fi node | TinyScreen+ ASM2022 with the borrowed ASD2123-R Wi-Fi TinyShield |
 | Lab host | Team laptop running the input app, IoT decoy, and dashboard on a private 2.4 GHz network |
-| Toolchain and library versions | Pending a successful baseline build and hardware check |
+| USB toolchain | Arduino CLI 1.5.1, Arduino SAMD 1.8.14, TinyCircuits SAMD 1.1.0, TinyScreen 1.1.0 |
 
 ## Setup and operation
 
-1. Clone the repository and open its root folder.
-2. Check the current milestone and prerequisites in the project plan.
-3. Follow the build and upload instructions here once the toolchain has been verified.
+### Set up the TinyScreen+ on Windows
 
-Build, upload, and operation instructions are pending hardware feasibility checks.
+Open PowerShell in the project root. Install Arduino CLI, then run the following once to set up the board packages and display library. [Arduino CLI installation guide](https://docs.arduino.cc/arduino-cli/installation/) · [TinyCircuits setup guide](https://learn.tinycircuits.com/Processors/TinyScreen%2B_Setup_Tutorial/)
+
+```powershell
+arduino-cli config add board_manager.additional_urls https://files.tinycircuits.com/ArduinoBoards/package_tinycircuits_index.json
+arduino-cli core update-index
+arduino-cli core install arduino:samd@1.8.14
+arduino-cli core install TinyCircuits:samd@1.1.0
+arduino-cli lib install TinyScreen@1.1.0
+```
+
+Connect the TinyScreen+ with a Micro-USB data cable and turn it on. Run `arduino-cli board list` and substitute the board's port for `COM3` below. Several TinyCircuits models can match the same port. The `--fqbn` flag selects the TinyScreen+ explicitly.
+
+### Check the vendor baseline
+
+Upload the example installed with the TinyScreen library. It replaces the sketch currently stored on the board.
+
+```powershell
+$port = 'COM3'
+$sketchbook = arduino-cli config get directories.user | Select-Object -First 1
+$example = Join-Path $sketchbook.Trim() 'libraries\TinyScreen\examples\TinyScreenBasicExample'
+arduino-cli compile --fqbn TinyCircuits:samd:tinyscreen --port $port --upload $example
+```
+
+Check for `Verify successful` in the terminal and a repeating sequence of graphics and text on the OLED. Arvin observed both on a TinyScreen+ with Windows on 8 Nov 2026. [TinyScreen example source](https://github.com/TinyCircuits/TinyCircuits-TinyScreen_Lib/blob/master/examples/TinyScreenBasicExample/TinyScreenBasicExample.ino)
+
+### Build and check USB Test
+
+With the OLED text upright, the upper buttons are L1 and R1, and the lower buttons are L2 and R2.
+
+Use the board's current COM port for `$port`.
+
+```powershell
+$port = 'COM3'
+arduino-cli compile --fqbn TinyCircuits:samd:tinyscreen .\firmware\TraceDeck
+arduino-cli compile --fqbn TinyCircuits:samd:tinyscreen --port $port --upload .\firmware\TraceDeck
+```
+
+1. Power the board on and confirm the OLED reads `USB Test`, `SAFE`, and `Ready`.
+2. Tap and release L2 (`ARM`). Confirm `ARMED` appears.
+3. Within 10 seconds, tap R2 (`CANCEL`). Confirm `SAFE` and `Cancelled` appear.
+4. Arm again and wait 10 seconds. Confirm `SAFE` and `Timed out` appear.
+5. Hold L2 through a timeout. Confirm the screen stays `SAFE` until you release the button and press it again.
+
+On 8 Nov 2026, Arvin verified startup in SAFE after a power cycle, arming with L2, cancellation with R2, and return to SAFE after waiting for the arming window to expire. The held-L2 check is pending.
 
 ## Repository layout
 
-The initial shared files are this README, the project plan, and repository configuration. Add these directories when their first real files are needed:
+The USB Test sketch is in `firmware/TraceDeck/`. Add the remaining directories when their first real files are needed.
 
 | Directory | Purpose |
 | --- | --- |
