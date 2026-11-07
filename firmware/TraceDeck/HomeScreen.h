@@ -10,7 +10,7 @@ public:
     bool openUsbOnPress(uint8_t pressed);
 
 private:
-    void drawSelection(uint16_t color);
+    void drawSelection();
 
     TinyScreen &display_;
     bool usbSelected_ = true;

@@ -16,6 +16,7 @@ Screen screen = Screen::Home;
 
 void setup() {
     display.begin();
+    display.setBitDepth(TSBitDepth16);
     display.setBrightness(10);
     buttons.begin(millis());
     home.enter();

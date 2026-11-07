@@ -11,9 +11,11 @@ public:
     bool update(uint8_t pressed, uint32_t now);
 
 private:
-    void draw(const char *message);
+    void drawState(const char *message);
+    void drawCountdown(uint8_t seconds);
 
     TinyScreen &display_;
     bool armed_ = false;
     uint32_t armedAt_ = 0;
+    uint8_t displayedSeconds_ = 0;
 };
