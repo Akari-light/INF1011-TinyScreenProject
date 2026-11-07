@@ -2,7 +2,7 @@
 
 TraceDeck is an ICT1011 TinyCircuits security lab. Two TinyScreen+ nodes run controlled USB keyboard and Wi-Fi interactions against a laptop-hosted IoT decoy. A live timeline links each lab run to its recorded events.
 
-The TinyScreen+ USB keyboard path has passed the Windows Notepad test. The firmware opens the USB Test screen at startup.
+The TinyScreen+ USB keyboard path has passed the Windows Notepad test. The firmware starts on Home with `USB TEST` selected and `WI-FI SOON` as a placeholder.
 
 See [PROJECT_PLAN.md](PROJECT_PLAN.md) for requirements, architecture decisions, responsibilities, milestones, task status, and team working conventions.
 
@@ -57,13 +57,25 @@ arduino-cli compile --fqbn TinyCircuits:samd:tinyscreen .\firmware\TraceDeck
 arduino-cli compile --fqbn TinyCircuits:samd:tinyscreen --port $port --upload .\firmware\TraceDeck
 ```
 
-1. Power the board on and confirm the OLED reads `USB Test`, `SAFE`, and `Ready`.
+1. Power the board on and confirm Home highlights `USB TEST`. Tap L1 (`OPEN`) and confirm the OLED reads `USB Test`, `SAFE`, and `Ready`.
 2. Tap and release L2 (`ARM`). Confirm `ARMED` appears.
 3. Within 10 seconds, tap R2 (`CANCEL`). Confirm `SAFE` and `Cancelled` appear.
 4. Arm again and wait 10 seconds. Confirm `SAFE` and `Timed out` appear.
 5. Hold L2 through a timeout. Confirm the screen stays `SAFE` until you release the button and press it again.
+6. In `SAFE`, tap R2 (`BACK`) to return to Home.
 
-On 8 Nov 2026, Arvin verified startup in SAFE after a power cycle, arming with L2, cancellation with R2, and return to SAFE after waiting for the arming window to expire. Holding L2 through timeout left the screen in SAFE.
+On 8 Nov 2026, Arvin verified startup in SAFE on the original standalone USB Test screen, arming with L2, cancellation with R2, and return to SAFE after waiting for the arming window to expire. Holding L2 through timeout left the screen in SAFE.
+
+### Check Home navigation in Notepad
+
+Focus a blank Notepad document for all of these checks. Expect it to stay blank throughout.
+
+1. On Home, tap R1 (`UP`) twice. The outline should move to `WI-FI SOON` and then back to `USB TEST`. Repeat with R2 (`DOWN`). Both directions wrap.
+2. Highlight `WI-FI SOON` and tap L1 (`OPEN`). Home should stay visible with the same selection.
+3. Highlight `USB TEST`. Hold L1 until USB Test opens in `SAFE`. With L1 still held, also hold L2. Release L1 while keeping L2 held for a second. The screen should stay `SAFE`. Release L2.
+4. Tap L2 to arm, then hold R2 (`CANCEL`). The screen should return to `SAFE` and stay on USB Test. Release R2 and hold it again (`BACK`). Home should open and the selection should stay on `USB TEST` until a fresh press.
+
+On 8 Nov 2026, Arvin verified both wrap directions, the Wi-Fi placeholder, held-button transitions, and cancel followed by Back on the TinyScreen+. Notepad stayed blank throughout.
 
 ### Check keyboard output in Notepad
 

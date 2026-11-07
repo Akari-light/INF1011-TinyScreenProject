@@ -4,7 +4,7 @@
 
 namespace {
 constexpr uint8_t kArmButton = TSButtonLowerLeft;
-constexpr uint8_t kCancelButton = TSButtonLowerRight;
+constexpr uint8_t kCancelOrBackButton = TSButtonLowerRight;
 constexpr uint8_t kSendButton = TSButtonUpperRight;
 constexpr uint32_t kArmWindowMs = 10000;
 constexpr char kTestMarker[] = "tracedeck usb test";
@@ -18,11 +18,11 @@ void UsbTestScreen::enter() {
     draw("Ready");
 }
 
-void UsbTestScreen::update(uint8_t pressed, uint32_t now) {
+bool UsbTestScreen::update(uint8_t pressed, uint32_t now) {
     if (armed_ && now - armedAt_ >= kArmWindowMs) {
         armed_ = false;
         draw("Timed out");
-    } else if (armed_ && pressed == kCancelButton) {
+    } else if (armed_ && pressed == kCancelOrBackButton) {
         armed_ = false;
         draw("Cancelled");
     } else if (armed_ && pressed == kSendButton) {
@@ -37,7 +37,10 @@ void UsbTestScreen::update(uint8_t pressed, uint32_t now) {
         armed_ = true;
         armedAt_ = now;
         draw("Cancel or wait");
+    } else if (!armed_ && pressed == kCancelOrBackButton) {
+        return true;
     }
+    return false;
 }
 
 void UsbTestScreen::draw(const char *message) {
@@ -58,6 +61,10 @@ void UsbTestScreen::draw(const char *message) {
     display_.fontColor(TS_8b_White, TS_8b_Black);
     display_.setCursor(3, 33);
     display_.print(message);
-    display_.setCursor(armed_ ? 57 : 3, 52);
-    display_.print(armed_ ? "CANCEL" : "ARM");
+    if (!armed_) {
+        display_.setCursor(3, 52);
+        display_.print("ARM");
+    }
+    display_.setCursor(armed_ ? 57 : 69, 52);
+    display_.print(armed_ ? "CANCEL" : "BACK");
 }

@@ -1,23 +1,37 @@
 #include <TinyScreen.h>
 
 #include "ButtonReader.h"
+#include "HomeScreen.h"
 #include "UsbTestScreen.h"
 
 namespace {
+enum class Screen { Home, UsbTest };
+
 TinyScreen display(TinyScreenPlus);
 ButtonReader buttons(display);
+HomeScreen home(display);
 UsbTestScreen usbTest(display);
+Screen screen = Screen::Home;
 }
 
 void setup() {
     display.begin();
     display.setBrightness(10);
     buttons.begin(millis());
-    usbTest.enter();
+    home.enter();
 }
 
 void loop() {
     const uint32_t now = millis();
     const uint8_t pressed = buttons.readPress(now);
-    usbTest.update(pressed, now);
+    // Only the current screen receives the press. The reader keeps its held state.
+    if (screen == Screen::Home) {
+        if (home.openUsbOnPress(pressed)) {
+            screen = Screen::UsbTest;
+            usbTest.enter();
+        }
+    } else if (usbTest.update(pressed, now)) {
+        screen = Screen::Home;
+        home.enter();
+    }
 }

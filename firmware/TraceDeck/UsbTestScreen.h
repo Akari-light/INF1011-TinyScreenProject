@@ -7,7 +7,8 @@ public:
     explicit UsbTestScreen(TinyScreen &display);
 
     void enter();
-    void update(uint8_t pressed, uint32_t now);
+    // Returns true when a Back press requests Home.
+    bool update(uint8_t pressed, uint32_t now);
 
 private:
     void draw(const char *message);
