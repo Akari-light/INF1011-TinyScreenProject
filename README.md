@@ -1,8 +1,8 @@
-# ICT1011 TinyCircuits Team Exploration Project
+# TraceDeck
 
-This repository will contain the team's TinyCircuits application, hardware information, tests, and delivery documentation. The application has not been selected yet.
+TraceDeck is an ICT1011 TinyCircuits security lab. Two TinyScreen+ nodes run controlled USB keyboard and Wi-Fi interactions against a laptop-hosted IoT decoy. A live timeline links each lab run to its recorded events.
 
-**Current phase:** foundation setup, before brainstorming. No application code or hardware configuration has been selected.
+**Current phase:** scope review and hardware feasibility planning. Implementation is pending.
 
 See [PROJECT_PLAN.md](PROJECT_PLAN.md) for requirements, architecture decisions, responsibilities, milestones, task status, and team working conventions.
 
@@ -10,17 +10,18 @@ See [PROJECT_PLAN.md](PROJECT_PLAN.md) for requirements, architecture decisions,
 
 | Item | Current value |
 | --- | --- |
-| Processor board, revision, and accessories | TBD: inventory the supplied kit |
-| Development environment and version | TBD: verify the vendor-supported workflow |
-| Board package and library versions | TBD: record after a successful baseline build |
+| USB keyboard node | TinyScreen+ ASM2022 with a USB data cable |
+| Wi-Fi node | TinyScreen+ ASM2022 with the borrowed ASD2123-R Wi-Fi TinyShield |
+| Lab host | Team laptop running the input app, IoT decoy, and dashboard on a private 2.4 GHz network |
+| Toolchain and library versions | Pending a successful baseline build and hardware check |
 
 ## Setup and operation
 
 1. Clone the repository and open its root folder.
 2. Check the current milestone and prerequisites in the project plan.
-3. Once the board and toolchain are confirmed, follow the build and upload instructions added here.
+3. Follow the build and upload instructions here once the toolchain has been verified.
 
-Build, upload, operation, and test commands are not available yet. Do not infer a board target or install an assumed toolchain from this skeleton.
+Build, upload, and operation instructions are pending hardware feasibility checks.
 
 ## Repository layout
 
@@ -33,10 +34,10 @@ The initial shared files are this README, the project plan, and repository confi
 | `tests/` | System test procedures and selected reproducible evidence |
 | `docs/` | Supporting diagrams, source acknowledgements, and demo/submission material |
 
-Use the chosen toolchain's native layout inside `firmware/`. Add a companion application directory only if the chosen application requires one.
+Use the chosen toolchain's native layout inside `firmware/`. Add a directory for the companion application when laptop development begins.
 
 ## Verification and reused material
 
-No firmware has been built, uploaded, simulated, or physically tested yet. Test procedures and expected results will be defined alongside the selected application. Record a successful build separately from a successful hardware test.
+The project plan lists the acceptance checks. Record build results separately from physical USB and Wi-Fi test results.
 
-Preserve upstream license notices. Attribute reused or adapted code in the relevant source files and delivery material; record source URLs, versions or revisions, and modifications. A project-wide license has not been selected.
+Preserve upstream license notices. Attribute reused or adapted code in the relevant source files and delivery material. Record source URLs, versions or revisions, and modifications. A project-wide license is pending.
