@@ -2,7 +2,7 @@
 
 TraceDeck is an ICT1011 TinyCircuits security lab. Two TinyScreen+ nodes run controlled USB keyboard and Wi-Fi interactions against a laptop-hosted IoT decoy. A live timeline links each lab run to its recorded events.
 
-USB hardware feasibility is in progress. The first firmware block opens the USB Test screen at startup.
+The TinyScreen+ USB keyboard path has passed the Windows Notepad test. The firmware opens the USB Test screen at startup.
 
 See [PROJECT_PLAN.md](PROJECT_PLAN.md) for requirements, architecture decisions, responsibilities, milestones, task status, and team working conventions.
 
@@ -13,7 +13,7 @@ See [PROJECT_PLAN.md](PROJECT_PLAN.md) for requirements, architecture decisions,
 | USB keyboard node | TinyScreen+ ASM2022 with a USB data cable |
 | Wi-Fi node | TinyScreen+ ASM2022 with the borrowed ASD2123-R Wi-Fi TinyShield |
 | Lab host | Team laptop running the input app, IoT decoy, and dashboard on a private 2.4 GHz network |
-| USB toolchain | Arduino CLI 1.5.1, Arduino SAMD 1.8.14, TinyCircuits SAMD 1.1.0, TinyScreen 1.1.0 |
+| USB toolchain | Arduino CLI 1.5.1, Arduino SAMD 1.8.14, TinyCircuits SAMD 1.1.0, TinyScreen 1.1.0, Arduino Keyboard 1.0.7 |
 
 ## Setup and operation
 
@@ -27,6 +27,7 @@ arduino-cli core update-index
 arduino-cli core install arduino:samd@1.8.14
 arduino-cli core install TinyCircuits:samd@1.1.0
 arduino-cli lib install TinyScreen@1.1.0
+arduino-cli lib install Keyboard@1.0.7
 ```
 
 Connect the TinyScreen+ with a Micro-USB data cable and turn it on. Run `arduino-cli board list` and substitute the board's port for `COM3` below. Several TinyCircuits models can match the same port. The `--fqbn` flag selects the TinyScreen+ explicitly.
@@ -63,6 +64,17 @@ arduino-cli compile --fqbn TinyCircuits:samd:tinyscreen --port $port --upload .\
 5. Hold L2 through a timeout. Confirm the screen stays `SAFE` until you release the button and press it again.
 
 On 8 Nov 2026, Arvin verified startup in SAFE after a power cycle, arming with L2, cancellation with R2, and return to SAFE after waiting for the arming window to expire. The held-L2 check is pending.
+
+### Check keyboard output in Notepad
+
+After uploading TraceDeck, focus a blank Notepad document on the test laptop. Use the US keyboard layout and turn Caps Lock off. The marker is `tracedeck usb test` with no newline. The OLED reports `Send attempted` when the firmware calls the Arduino Keyboard library. Notepad shows what the laptop actually received. [Arduino Keyboard library](https://github.com/arduino-libraries/Keyboard/tree/1.0.7)
+
+1. In `SAFE`, tap R1. Expect the document to stay blank.
+2. Tap and release L2 (`ARM`), then tap R1 (`SEND`) within 10 seconds. Expect one exact marker and a return to `SAFE`.
+3. Start with a blank document again. Tap and release L2, then press and hold R1 for 3 seconds. Expect one exact marker, including after releasing R1.
+4. Start with a blank document. Arm with L2, cancel with R2, then tap R1. Expect the document to stay blank. Repeat with an expired arming window.
+
+On 8 Nov 2026, Arvin confirmed the four-button orientation and passed these checks on the TinyScreen+ and a Windows laptop. Tapping or holding R1 after arming entered exactly one marker and returned the screen to SAFE. R1 produced no text when unarmed, cancelled, or expired.
 
 ## Repository layout
 

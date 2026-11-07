@@ -1,10 +1,14 @@
 #include "UsbTestScreen.h"
 
+#include <Keyboard.h>
+
 namespace {
 constexpr uint8_t kArmButton = TSButtonLowerLeft;
 constexpr uint8_t kCancelButton = TSButtonLowerRight;
+constexpr uint8_t kSendButton = TSButtonUpperRight;
 constexpr uint32_t kDebounceMs = 25;
 constexpr uint32_t kArmWindowMs = 10000;
+constexpr char kTestMarker[] = "tracedeck usb test";
 }
 
 UsbTestScreen::UsbTestScreen(TinyScreen &display) : display_(display) {}
@@ -13,6 +17,7 @@ void UsbTestScreen::enter() {
     armed_ = false;
     rawButtons_ = stableButtons_ = display_.getButtons();
     buttonsChangedAt_ = millis();
+    Keyboard.begin(KeyboardLayout_en_US);
     draw("Ready");
 }
 
@@ -39,6 +44,14 @@ void UsbTestScreen::update() {
     } else if (armed_ && pressed == kCancelButton) {
         armed_ = false;
         draw("Cancelled");
+    } else if (armed_ && pressed == kSendButton) {
+        armed_ = false;
+        if (USBDevice.configured()) {
+            Keyboard.print(kTestMarker);
+            draw("Send attempted");
+        } else {
+            draw("USB unavailable");
+        }
     } else if (!armed_ && pressed == kArmButton) {
         armed_ = true;
         armedAt_ = now;
@@ -52,6 +65,10 @@ void UsbTestScreen::draw(const char *message) {
     display_.fontColor(TS_8b_White, TS_8b_Black);
     display_.setCursor(3, 3);
     display_.print("USB Test");
+    if (armed_) {
+        display_.setCursor(69, 3);
+        display_.print("SEND");
+    }
 
     display_.fontColor(armed_ ? TS_8b_Yellow : TS_8b_Green, TS_8b_Black);
     display_.setCursor(3, 18);
