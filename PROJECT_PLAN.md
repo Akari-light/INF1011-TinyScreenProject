@@ -9,7 +9,7 @@ The team's central implementation plan. Keep requirements, tasks, responsibiliti
 - The team selected **TraceDeck**, a pocket attack-and-deception lab. The vendor OLED baseline and the USB keyboard test in Windows Notepad passed. Arvin is developing TraceDeck solo for now.
 - **Optional if time allows:** AuthenticConfig and the expanded honeypot + Rubber Ducky-style USB + IoT toolkit.
 - Seven members have TinyScreen+ kits and laptops. One Wi-Fi TinyShield is already on loan. Owners and internal dates are pending. The verified USB baseline toolchain versions are in [README.md](README.md).
-- The next feasibility check is a direct Wi-Fi round trip on the actual hardware. Integration with the laptop decoy follows both feasibility checks.
+- The next USB checkpoint after the firmware UI is the prepared laptop lab target. The direct Wi-Fi round trip on the actual hardware follows later, before both paths are integrated with the laptop decoy.
 
 ## Assignment baseline
 
