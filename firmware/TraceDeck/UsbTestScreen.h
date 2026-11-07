@@ -7,7 +7,7 @@ public:
     explicit UsbTestScreen(TinyScreen &display);
 
     void enter();
-    void update();
+    void update(uint8_t pressed, uint32_t now);
 
 private:
     void draw(const char *message);
@@ -15,7 +15,4 @@ private:
     TinyScreen &display_;
     bool armed_ = false;
     uint32_t armedAt_ = 0;
-    uint32_t buttonsChangedAt_ = 0;
-    uint8_t rawButtons_ = 0;
-    uint8_t stableButtons_ = 0;
 };

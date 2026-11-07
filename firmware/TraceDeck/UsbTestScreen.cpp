@@ -6,7 +6,6 @@ namespace {
 constexpr uint8_t kArmButton = TSButtonLowerLeft;
 constexpr uint8_t kCancelButton = TSButtonLowerRight;
 constexpr uint8_t kSendButton = TSButtonUpperRight;
-constexpr uint32_t kDebounceMs = 25;
 constexpr uint32_t kArmWindowMs = 10000;
 constexpr char kTestMarker[] = "tracedeck usb test";
 }
@@ -15,29 +14,11 @@ UsbTestScreen::UsbTestScreen(TinyScreen &display) : display_(display) {}
 
 void UsbTestScreen::enter() {
     armed_ = false;
-    rawButtons_ = stableButtons_ = display_.getButtons();
-    buttonsChangedAt_ = millis();
     Keyboard.begin(KeyboardLayout_en_US);
     draw("Ready");
 }
 
-void UsbTestScreen::update() {
-    const uint32_t now = millis();
-    const uint8_t buttons = display_.getButtons();
-    if (buttons != rawButtons_) {
-        rawButtons_ = buttons;
-        buttonsChangedAt_ = now;
-    }
-
-    uint8_t pressed = 0;
-    if (rawButtons_ != stableButtons_ && now - buttonsChangedAt_ >= kDebounceMs) {
-        // Accept a new press only after the previous buttons have been released.
-        if (stableButtons_ == 0) {
-            pressed = rawButtons_;
-        }
-        stableButtons_ = rawButtons_;
-    }
-
+void UsbTestScreen::update(uint8_t pressed, uint32_t now) {
     if (armed_ && now - armedAt_ >= kArmWindowMs) {
         armed_ = false;
         draw("Timed out");

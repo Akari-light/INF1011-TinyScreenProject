@@ -63,7 +63,7 @@ arduino-cli compile --fqbn TinyCircuits:samd:tinyscreen --port $port --upload .\
 4. Arm again and wait 10 seconds. Confirm `SAFE` and `Timed out` appear.
 5. Hold L2 through a timeout. Confirm the screen stays `SAFE` until you release the button and press it again.
 
-On 8 Nov 2026, Arvin verified startup in SAFE after a power cycle, arming with L2, cancellation with R2, and return to SAFE after waiting for the arming window to expire. The held-L2 check is pending.
+On 8 Nov 2026, Arvin verified startup in SAFE after a power cycle, arming with L2, cancellation with R2, and return to SAFE after waiting for the arming window to expire. Holding L2 through timeout left the screen in SAFE.
 
 ### Check keyboard output in Notepad
 
@@ -75,6 +75,8 @@ After uploading TraceDeck, focus a blank Notepad document on the test laptop. Us
 4. Start with a blank document. Arm with L2, cancel with R2, then tap R1. Expect the document to stay blank. Repeat with an expired arming window.
 
 On 8 Nov 2026, Arvin confirmed the four-button orientation and passed these checks on the TinyScreen+ and a Windows laptop. Tapping or holding R1 after arming entered exactly one marker and returned the screen to SAFE. R1 produced no text when unarmed, cancelled, or expired.
+
+Arvin repeated the SAFE startup and unarmed, held SEND, cancel, and timeout checks on the same setup after the button debounce was moved into a shared reader. All passed on 8 Nov 2026.
 
 ## Repository layout
 
