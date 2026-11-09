@@ -1,9 +1,7 @@
-"""Local, read-only operator dashboard."""
-
 from flask import Blueprint, abort, current_app, render_template, request
-
 from . import database
 
+# Local, read-only operator dashboard.
 dashboard_blueprint = Blueprint("dashboard", __name__)
 
 

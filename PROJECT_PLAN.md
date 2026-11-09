@@ -7,9 +7,9 @@ The team's central implementation plan. Keep requirements, tasks, responsibiliti
 ## Current position
 
 - The team selected **TraceDeck**, a pocket attack-and-deception lab. The vendor OLED baseline and the USB keyboard test in Windows Notepad passed. Arvin is developing TraceDeck solo for now.
-- **Optional if time allows:** AuthenticConfig and the expanded honeypot + Rubber Ducky-style USB + IoT toolkit.
+- **Optional if time allows:** AuthenticConfig, the expanded honeypot + Rubber Ducky-style USB + IoT toolkit, and browser-trusted HTTPS for the BadUSB upload page.
 - Seven members have TinyScreen+ kits and laptops. One Wi-Fi TinyShield is already on loan. Owners and internal dates are pending. The verified USB baseline toolchain versions are in [README.md](README.md).
-- The next USB checkpoint uses the PC as PC1 and the Windows laptop as PC2. The planned board sequence saves a Notepad file for the prepared PC2 sender to upload. The end-to-end check follows sender and firmware setup. Direct Wi-Fi and the mock IoT service follow later.
+- The PC1 browser upload page is ready for code review. The next USB checkpoint is the TinyScreen+ sequence that creates the Notepad file and submits it through the browser on the unlocked Windows laptop. The hardware and LAN check follows firmware setup. Direct Wi-Fi and the mock IoT service follow later.
 
 ## Assignment baseline
 
@@ -30,7 +30,7 @@ It specifies six-member proposed teams and permits an instructor-added member. R
 
 ## Product scope
 
-**TraceDeck** lets students trace evidence from controlled USB and Wi-Fi interactions. In the USB base, a physically armed TinyScreen+ opens Windows Run on PC2, launches Notepad, types `hello world`, and saves `hello-world.txt` to the designated lab folder. The prepared PC2 sender uploads that file to TraceHub on PC1. The Ops Console shows the decoded text and loot metadata. In the later network path, a second TinyScreen+ sends a request over local Wi-Fi to the mock IoT service and displays the service result.
+**TraceDeck** lets students trace evidence from controlled USB and Wi-Fi interactions. In the USB base, a physically armed TinyScreen+ opens Windows Run on PC2, launches Notepad, types `hello world`, and saves `hello-world.txt` to the designated lab folder. The board then opens TraceHub's upload page in the existing browser and selects the saved file. The browser sends it to PC1 over the isolated LAN. The Ops Console shows the decoded text and loot metadata. In the later network path, a second TinyScreen+ sends a request over local Wi-Fi to the mock IoT service and displays the service result.
 
 ### Core requirements for team review
 
@@ -38,18 +38,19 @@ It specifies six-member proposed teams and permits an instructor-added member. R
 | --- | --- | --- |
 | H01 | The USB node starts unarmed and emits one fixed lab interaction only after explicit physical arming and execution. It returns to a safe state on completion, cancellation, or arming timeout. | The expected Notepad file is saved on the tested PC2 laptop. Unarmed, cancelled-before-execution, and expired attempts emit no keystrokes. |
 | H02 | The network node sends a bounded request directly to the owned decoy and displays the actual matching result or a timeout/unknown state. | A live request and response agree with the service log and the OLED. With the service unavailable, the OLED reports the failure to confirm the result. |
-| H03 | TraceHub receives bounded USB helper submissions continuously. The mock IoT service simulates one device with dummy data and independently records Wi-Fi requests and outcomes. | Each deliberate USB trigger produces one loot entry with a source and timestamp. A direct Wi-Fi request produces the expected service result. |
+| H03 | TraceHub accepts the fixed USB demo file through the PC2 browser while the demo listener is running. The mock IoT service simulates one device with dummy data and independently records Wi-Fi requests and outcomes. | Each deliberate USB trigger produces one loot entry with a source and timestamp. A direct Wi-Fi request produces the expected service result. |
 | H04 | The dashboard shows saved evidence with its ID, source, and server timestamp. Board status distinguishes keys sent from a matching service response. | The manual control and repeated USB and Wi-Fi interactions produce distinct evidence. Retried submissions preserve their original loot IDs. |
 | H05 | The team can repeat both paths on the assessment setup and recover the evidence after a server restart. | A second teammate follows setup, completes both paths, and verifies that the dashboard shows each new result and retains previous records. |
 
-The core is one decoy, one fixed USB scenario, and one direct Wi-Fi scenario. Use team-owned equipment, an isolated local network, and synthetic data. The prepared helper's credential identifies the enrolled source, and TraceHub's saved loot provides evidence of the USB submission. HTTP logs show service interactions and the honeypot records them. The project scope excludes general payload scripting, shell commands, external targets, broad scanning, public honeypot hosting, real credential collection, and locked-session or privilege bypass.
+The core is one decoy, one fixed USB scenario, and one direct Wi-Fi scenario. Use team-owned equipment, an isolated local network, and synthetic data. The browser demo uses cleartext HTTP for its fixed file and sends no credential. TraceHub records the peer IP observed by PC1. HTTP logs show service interactions and the honeypot records them. The project scope excludes general payload scripting, shell commands, external targets, broad scanning, public honeypot hosting, real credential collection, and locked-session or privilege bypass.
 
 ### Possible extensions if time allows
 
-Keep the core release runnable independently. Consider either extension only after M3, with both paths rehearsed and sufficient time reserved for verification, video, and submission. Include an extension in the video and live demo only when its acceptance checks pass.
+Keep the core release runnable independently. Consider extensions only after M3, with both paths rehearsed and sufficient time reserved for verification, video, and submission. Include an extension in the video and live demo only when its acceptance checks pass.
 
 - **E01 — AuthenticConfig.** The laptop issues a bounded, authenticated application profile. One TinyScreen+ validates the schema and parameter bounds, checks the HMAC, and applies a newer valid profile with a visible effect such as a changed label or request interval. Altered, out-of-bounds, or replayed profiles must leave the active profile unchanged. A borrowed ASD2202-R-E EEPROM is a candidate for retaining the accepted profile and version after a normal restart. Verify retention and rollback rejection after restart before claiming persistence. Invalid stored state must produce an explicit recovery condition. If storage is unavailable, demonstrate session-only version checking. [TinyCircuits EEPROM guide](https://learn.tinycircuits.com/Memory/EEPROM_TinyShield_Tutorial/).
 - **E02 — Expanded honeypot + Rubber Ducky-style USB + IoT toolkit.** Reuse the core nodes, decoy, and event timeline. Add selectable, predefined lab scenarios with bounded USB actions and direct board-originated IoT checks. Start with one additional scenario, such as comparing how the same mock IoT control request is handled under permissive and guarded policies. The operator selects the preset, runs the relevant USB or Wi-Fi interaction, and sees the actual response and correlated evidence. Verify that the selected preset executes, both policy outcomes are observable, and the core scenario still runs after reset. Pick the final added scenario during extension review.
+- **E03 — Browser-trusted HTTPS for BadUSB.** Use a hostname the team controls and resolve it to PC1's private address on the demo network. Obtain a publicly trusted certificate with DNS-01 validation so the upload service can stay reachable only on the LAN. Verify that the stock PC2 browser opens the page and uploads the demo file without a certificate warning or a custom trust installation. [Let's Encrypt DNS-01 validation](https://letsencrypt.org/docs/challenge-types/#dns-01-challenge).
 
 ## Architecture decisions
 
@@ -64,13 +65,13 @@ Working conventions and proposed TraceDeck architecture. Team review is pending.
 | D05 | Verify the actual kit using its vendor-supported workflow before selecting the toolchain | Demonstrate board/library compatibility first |
 | D06 | Short-lived task branches and reviewed pull requests into main | Integrate small changes and preserve review history |
 | D07 | Track tasks here initially | Reconsider GitHub Issues only if this table becomes unwieldy |
-| D08 | PC1 runs the Ops Console and PC2 runs the Windows helper for the USB base. The later Wi-Fi path uses a second TinyScreen+. | Validate USB HID and Wi-Fi independently and capture both paths in one Ops Console. |
-| D09 | Collect loot continuously and identify each saved entry by its server-assigned ID. | Multiple enrolled helpers can submit while TraceHub is listening. A helper ID and submission ID together identify a retry. |
-| D10 | Use one PC1 Flask codebase in `tracehub/`, a SQLite store, and separate operator and device interfaces. | Keep the dashboard local to PC1 and accept credentialed LAN traffic over HTTPS. |
+| D08 | PC1 runs TraceHub. The USB node drives PC2's existing apps and browser through USB HID. The later Wi-Fi path uses a second TinyScreen+. | Use an unlocked laptop on the demo network without installing a helper. |
+| D09 | Collect loot continuously and identify each saved entry by its server-assigned ID. | A submission ID identifies a retry of the same browser form. The authenticated API scopes its submission IDs to each enrolled helper. |
+| D10 | Use one PC1 Flask codebase in `tracehub/` with SQLite and separate dashboard, fixed-file demo, and authenticated API profiles. | Keep the dashboard local to PC1, scope cleartext traffic to the synthetic demo, and require HTTPS for credentialed uploads. |
 
 The integrated lab uses two ASM2022 TinyScreen+ boards, one borrowed ASD2123-R Wi-Fi TinyShield on the network node, PC1 and PC2, working USB data/power connections, and a reachable private 2.4 GHz network. The other kits are available for development. Leave the ST BLE shield off the Wi-Fi stack. Confirm the USB layout, Wi-Fi reachability, power, and venue setup early. Arduino Keyboard and WiFi101 are documented starting points. Record the exact versions after testing the actual hardware. [TinyScreen+ SAMD package](https://files.tinycircuits.com/ArduinoBoards/tinycircuits-samd-1.1.0.zip), [Arduino Keyboard](https://docs.arduino.cc/language-reference/en/functions/usb/Keyboard/), [TinyCircuits Wi-Fi guide](https://learn.tinycircuits.com/Communication/WiFi_TinyShield_Tutorial/).
 
-Each helper generates a new submission ID per deliberate trigger and keeps it for retries. TraceHub authenticates the helper over HTTPS and commits the loot before acknowledging it. For a text-file upload, the loot entry stores decoded text, the filename, and the original byte count. The Ops Console shows the most recent loot by source and time. Future Wi-Fi results retain their own evidence fields. C2 tasking follows the core lab.
+Each new browser form gets a submission ID that it sends with the file. TraceHub commits the decoded text, filename, original byte count, and observed peer IP before showing the loot ID. The Ops Console shows the most recent loot by source and time. Future Wi-Fi results retain their own evidence fields. C2 tasking follows the core lab.
 
 Keep initialization and the execution loop small. Put rules, calculations, and state transitions in application modules; isolate vendor-library calls in hardware modules where practical. Prefer responsive timed updates when behavior requires them. Add classes, scheduling, or other layers only when justified.
 
@@ -88,7 +89,7 @@ Names and assignments require team agreement. Redistribute responsibilities as n
 | USB keyboard sequence, cancellation, and host compatibility | TBD | TBD |
 | Wi-Fi request handling, response parsing, and OLED feedback | TBD | TBD |
 | Laptop IoT honeypot, synthetic state, and service logging | TBD | TBD |
-| Lab input app, event schema, and evidence correlation | TBD | TBD |
+| BadUSB browser upload, loot schema, and evidence correlation | TBD | TBD |
 | Live dashboard and display of controls and errors | TBD | TBD |
 | System integration, reset and failure testing, and demo rehearsal | TBD | TBD |
 
@@ -103,7 +104,7 @@ Internal dates require agreement; assignment deadlines are recorded above.
 | M0 | Foundation | Record inventory, collaboration workflow, and a successful baseline build/upload | TBD | TBD | In progress |
 | M1 | TraceDeck scope review | Record the team selection and review H01–H05, interfaces, owners, and internal dates | TBD | TBD | Review |
 | M2 | Hardware feasibility | Demonstrate one harmless USB marker and a separate board-to-service Wi-Fi round trip on the actual hardware | TBD | TBD | Todo |
-| M3 | Core integration | Show USB loot and Wi-Fi decoy results in the live console, demonstrate board feedback, and repeat both paths. Review whether time remains for E01 or E02. | TBD | TBD | Todo |
+| M3 | Core integration | Show USB loot and Wi-Fi decoy results in the live console, demonstrate board feedback, and repeat both paths. Review whether time remains for an extension. | TBD | TBD | Todo |
 | M4 | Verified release | Pass the core checks and any checks for included extensions. A second teammate reproduces the demo setup. | TBD | TBD | Todo |
 | M5 | Submission ready | Check the video, attribution, source archive, and live rehearsal against A01–A06 | TBD | Before 25 Nov deadline | Todo |
 
@@ -121,7 +122,7 @@ Statuses: Todo, In progress, Blocked, Review, Done. Give each task one accountab
 | T06 | Record TraceDeck selection and review H01–H05 and the loot interface | TBD / TBD | TBD | T05 | Review | Team selected TraceDeck |
 | T07 | Verify arming, cancellation, and timeout, then test the fixed marker over USB HID (H01) | TBD / TBD | TBD | T03, T06 | Done | SAFE startup, button mapping, state transitions, and the one-marker Notepad test verified by Arvin on Windows, 8 Nov 2026. See [README.md](README.md). |
 | T08 | Verify direct Wi-Fi reachability, then implement the request and feedback path (H02) | TBD / TBD | TBD | T03, T06 | Todo | - |
-| T09 | Implement the lab input app, mock IoT decoy, and independent event records (H03) | TBD / TBD | TBD | T06 | Todo | - |
+| T09 | Implement the BadUSB browser upload, mock IoT decoy, and independent event records (H03) | TBD / TBD | TBD | T06 | In progress | PC1 browser upload ready for code review. |
 | T10 | Integrate both nodes and build the live correlation dashboard (H04) | TBD / TBD | TBD | T07, T08, T09 | Todo | - |
 | T11 | Verify the core, review the extension decision at M3, and rehearse the release (H05) | TBD / TBD | TBD | T10 | Todo | - |
 | T12 | Record the working demo and package, extract, and check the submission (A01–A06) | TBD / TBD | TBD | T11 | Todo | - |
@@ -146,9 +147,9 @@ Use automated tests for independent logic, integration checks for connected modu
 
 | Test ID | Requirement ID | Procedure / hardware | Expected result | Actual result | Revision / tester / date |
 | --- | --- | --- | --- | --- | --- |
-| V01 | H01 | With the PC2 sender and TinyScreen+ ready, try unarmed, deliberate, cancelled, expired, and held-INJECT board attempts | A deliberate injection visibly saves the expected Notepad file and produces one matching loot entry on PC1. Unarmed, cancelled, and expired attempts produce no new loot. | Not run | - |
+| V01 | H01 | With the PC1 demo listener running and the laptop unlocked on the isolated network, try unarmed, deliberate, cancelled, expired, and held-INJECT board attempts | A deliberate injection visibly saves the expected Notepad file and produces one matching loot entry on PC1. Holding INJECT produces one entry. Unarmed, cancelled, and expired attempts produce no new loot. | Not run | - |
 | V02 | H02 | Send a request over the owned network, then repeat with the decoy stopped | Matching live result when reachable and timeout/unknown when unavailable | Not run | - |
-| V03 | H03, H04 | Run USB, Wi-Fi, and manual controls, then retry a USB submission and submit with a wrong credential | The console identifies actual sources. Retrying returns the original loot ID and a wrong credential creates no entry. | Not run | - |
+| V03 | H03, H04 | Run USB, Wi-Fi, and manual controls. Retry the same browser submission and attempt to upload a file with a wrong name or contents. | The console shows the recorded sources and times. Retrying returns the original loot ID. The wrong file creates no entry. | Not run | - |
 | V04 | H05 | A second teammate sets up the system, runs both paths, restarts TraceHub, and repeats | Prior evidence stays available and new interactions produce distinct records. | Not run | - |
 
 For the 2–3 minute video and live demo, show the physical USB trigger, the resulting app and honeypot evidence, then the direct Wi-Fi interaction and its OLED result. Include a brief manual control, show each member's contribution in the video, and cite sources. Generate fresh records in the live assessment and use the same tested configuration as the video.
@@ -163,7 +164,7 @@ Before submission, test an extracted archive on a clean setup. Check it contains
 | Wi-Fi shield access or local client isolation | Test the actual loaned shield and private network early. If reachability remains unreliable, review a reduced USB and local decoy demo with the team. | TBD | Open |
 | Missing or misleading event correlation | Use separate app and server records and test missing/stale data before claiming a service result. | TBD | Open |
 | Toolchain compatibility and integration time | Record the vendor baseline and schedule short integration sessions using the one Wi-Fi shield. | TBD | Open |
-| Optional work disrupts the core or storage is unavailable | Preserve a runnable core revision. Timebox E01 and E02 after M3 and defer work that cannot be verified before recording. | TBD | Open |
+| Optional work disrupts the core or storage is unavailable | Preserve a runnable core revision. Timebox extensions after M3 and defer work that cannot be verified before recording. | TBD | Open |
 | Later course announcements | Confirm current instructions before submission | TBD | Open |
 
 ## Decision and progress log
@@ -174,3 +175,4 @@ Before submission, test an extracted archive on a clean setup. Check it contains
 | 2026-11-08 | Team selected TraceDeck as the primary project. AuthenticConfig and the expanded honeypot + Rubber Ducky-style USB + IoT toolkit are possible extensions. | Team decision reported by Arvin, who confirmed the TraceDeck name. Core acceptance criteria, owners, and internal dates are pending team review. |
 | 2026-11-10 | D08 records the two-PC USB base approved by Arvin on 9 Nov. D09 replaces the proposed run IDs and manual run controls with continuous loot collection. D10 records the TraceHub architecture. | Arvin approved implementation. Team review of the integrated design is pending. |
 | 2026-11-10 | Arvin approved the visible Notepad sequence and HTTPS text-file upload. PC1 stores decoded text and metadata as loot. | The PC hosts TraceHub and the laptop is the target. Physical verification follows sender and firmware setup. |
+| 2026-11-10 | Arvin approved the browser-driven USB demo on the isolated LAN. D08 now uses the stock PC2 browser, D09 covers browser retries, and D10 separates the HTTP demo from the authenticated HTTPS API. Browser-trusted HTTPS is E03. | The PC1 block is ready for review. Firmware and physical verification are pending. |

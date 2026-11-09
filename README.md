@@ -12,8 +12,8 @@ See [PROJECT_PLAN.md](PROJECT_PLAN.md) for requirements, architecture decisions,
 | --- | --- |
 | USB keyboard node | TinyScreen+ ASM2022 with a USB data cable |
 | Wi-Fi node | TinyScreen+ ASM2022 with the borrowed ASD2123-R Wi-Fi TinyShield |
-| PC1 | Windows lab PC hosting the Ops Console, HTTPS loot receiver, and the later mock IoT service |
-| PC2 | Unlocked Windows lab laptop for the Notepad demo and prepared file sender |
+| PC1 | Windows lab PC hosting the Ops Console, BadUSB demo upload, and later mock IoT service |
+| PC2 | Unlocked Windows lab laptop with Notepad and a browser on the isolated demo network |
 | USB toolchain | Arduino CLI 1.5.1, Arduino SAMD 1.8.14, TinyCircuits SAMD 1.1.0, TinyScreen 1.1.0, Arduino Keyboard 1.0.7 |
 
 ## Setup and operation
@@ -32,7 +32,21 @@ $traceDeckPython = Join-Path $traceDeckEnvironment 'Scripts\python.exe'
 
 Open `http://127.0.0.1:5000` on PC1. The dashboard checks for new loot every two seconds and shows the newest 50 entries. SQLite retains the saved loot across restarts in `%LOCALAPPDATA%\TraceDeck\tracehub.sqlite3`.
 
-### Start the HTTPS loot receiver on PC1
+### Start the BadUSB demo upload on PC1
+
+In a second PowerShell window in the project root, run `ipconfig` and find PC1's private IPv4 address on the isolated demo network. Use that address to bind the upload listener to the demo interface.
+
+```powershell
+$traceDeckPython = Join-Path $env:LOCALAPPDATA 'TraceDeck\venv\Scripts\python.exe'
+$pc1Ip = Read-Host 'PC1 private demo-network IPv4 address'
+& $traceDeckPython -m flask --app "tracehub:create_app('badusb_demo')" --no-debug run --host $pc1Ip --port 8080
+```
+
+The PC2 browser opens `http://<PC1-private-IP>:8080/badusb/upload`. The page accepts one UTF-8 `hello-world.txt` containing only `hello world`, with or without a final line break. This is a cleartext HTTP profile for the fixed synthetic file. If Windows Firewall needs a rule, scope it to the isolated demo network.
+
+After saving the decoded text and metadata, TraceHub shows the loot ID on the upload page and in the Ops Console. Browser submissions show the peer IP PC1 observed. Retrying the same form with the same file returns the same loot ID. Open a fresh form for a new attempt. Stop the demo listener with Ctrl+C when finished.
+
+### Start the separate HTTPS loot receiver on PC1
 
 Use a second PowerShell window in the project root. Find PC1's private lab-network IPv4 address with `ipconfig`. Keep `helpers.json` and the TLS private key in the Flask instance directory under local application data.
 
@@ -65,7 +79,7 @@ $receiverPrivateKey = Join-Path $traceDeckData 'intake-key.pem'
 
 The loot receiver exposes `POST /api/v1/loot` on the chosen private interface. A trusted HTTPS client uses the public certificate to validate PC1 and supplies `Authorization: Bearer <helper token>`. Generate a new UUID for each deliberate trigger and reuse it if you retry that submission.
 
-For the Notepad demo, the client sends `multipart/form-data` with two text fields, `submission_id` and `hostname`, and one uploaded part named `file`. Save the `.txt` file in UTF-8. The file limit is 1 KiB, and the full request can use up to 4 KiB to allow room for the form fields and multipart headers. PC1 saves the decoded text, filename, and original byte count in the loot entry.
+An authenticated client sends `multipart/form-data` with two text fields, `submission_id` and `hostname`, and one uploaded part named `file`. Save the `.txt` file in UTF-8. The file limit is 1 KiB, and the full request can use up to 4 KiB to allow room for the form fields and multipart headers. PC1 saves the decoded text, filename, and original byte count in the loot entry.
 
 A new submission returns HTTP 201 with `loot_id` after the save. The same ID appears in the Ops Console. An identical retry returns HTTP 200 and the original ID. Reusing a submission ID with different content or filename returns HTTP 409. A wrong token returns HTTP 401. A request with a different content type returns HTTP 415.
 
@@ -159,7 +173,7 @@ The USB Test sketch is in `firmware/TraceDeck/`. Add the remaining directories w
 | Directory | Purpose |
 | --- | --- |
 | `firmware/` | Device firmware and the selected toolchain's build configuration |
-| `tracehub/` | PC1 Ops Console, HTTPS loot receiver, and SQLite storage |
+| `tracehub/` | PC1 Ops Console, BadUSB demo upload, HTTPS loot receiver, and SQLite storage |
 | `hardware/` | Component list, pin assignments, wiring diagrams, and editable design files |
 | `tests/` | System test procedures and selected reproducible evidence |
 | `docs/` | Supporting diagrams, source acknowledgements, and demo/submission material |
@@ -170,6 +184,6 @@ Use the chosen toolchain's native layout inside `firmware/`.
 
 The project plan lists the acceptance checks. Record build results separately from physical USB and Wi-Fi test results.
 
-When the PC2 sender and firmware are ready, verify the file path on the actual lab devices. Use the PC as PC1 and the laptop as PC2. One physical injection should type `hello world` in Notepad, save `hello-world.txt` on the laptop, and produce one matching loot entry with the filename, upload size, and decoded text in the PC1 console.
+When the BadUSB firmware is ready, verify the file path on the actual lab devices. Use the PC as PC1 and the laptop as PC2. One physical injection should type `hello world` in Notepad, save `hello-world.txt` on the laptop, and submit it through the browser. Compare the loot ID on the upload page to the PC1 console entry and check its filename, upload size, and decoded text.
 
 Preserve upstream license notices. Attribute reused or adapted code in the relevant source files and delivery material. Record source URLs, versions or revisions, and modifications. A project-wide license is pending.

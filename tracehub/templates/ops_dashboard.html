@@ -26,10 +26,15 @@
                         <dt>Upload size</dt>
                         <dd>{{ entry.file_size_bytes }} bytes</dd>
                         {% endif %}
+                        {% if entry.helper_id %}
                         <dt>Helper ID</dt>
                         <dd>{{ entry.helper_id }}</dd>
                         <dt>Reported hostname</dt>
                         <dd>{{ entry.reported_hostname }}</dd>
+                        {% else %}
+                        <dt>Source</dt>
+                        <dd>BadUSB browser demo</dd>
+                        {% endif %}
                         <dt>Peer IP observed by PC1</dt>
                         <dd>{{ entry.observed_peer_ip }}</dd>
                         <dt>Received by PC1 (UTC)</dt>
