@@ -3,9 +3,9 @@
 #include "TerminalTheme.h"
 
 namespace {
-constexpr uint8_t kUsbRowY = 16;
+constexpr uint8_t kBadUsbRowY = 16;
 constexpr uint8_t kWifiRowY = 33;
-constexpr uint16_t kIdleUsb = TerminalTheme::color(124, 161, 177);
+constexpr uint16_t kIdleBadUsb = TerminalTheme::color(124, 161, 177);
 constexpr uint16_t kSelectedWifi = TerminalTheme::color(183, 226, 165);
 }
 
@@ -29,37 +29,37 @@ void HomeScreen::enter() {
     drawSelection();
 }
 
-bool HomeScreen::openUsbOnPress(uint8_t pressed) {
+bool HomeScreen::openBadUsbOnPress(uint8_t pressed) {
     if (pressed == TSButtonUpperRight || pressed == TSButtonLowerRight) {
         // Either direction advances to the other row in a two-row menu.
-        usbSelected_ = !usbSelected_;
+        badUsbSelected_ = !badUsbSelected_;
         drawSelection();
     }
 
-    return pressed == TSButtonUpperLeft && usbSelected_;
+    return pressed == TSButtonUpperLeft && badUsbSelected_;
 }
 
 void HomeScreen::drawSelection() {
     using namespace TerminalTheme;
 
-    drawText(display_, 4, 2, usbSelected_ ? kControl : kMuted, "OPEN");
+    drawText(display_, 4, 2, badUsbSelected_ ? kControl : kMuted, "OPEN");
     display_.clearWindow(4, 19, 5, 27);
-    const uint8_t pointerY = (usbSelected_ ? kUsbRowY : kWifiRowY) + 4;
+    const uint8_t pointerY = (badUsbSelected_ ? kBadUsbRowY : kWifiRowY) + 4;
     display_.drawLine(4, pointerY, 8, pointerY + 4, kCyan);
     display_.drawLine(8, pointerY + 4, 4, pointerY + 8, kCyan);
 
-    const uint16_t usbInk = usbSelected_ ? kCyan : kIdleUsb;
-    display_.drawLine(20, 18, 20, 29, usbInk);
-    display_.drawLine(18, 20, 20, 18, usbInk);
-    display_.drawLine(20, 18, 22, 20, usbInk);
-    display_.drawLine(16, 23, 16, 25, usbInk);
-    display_.drawLine(16, 25, 20, 27, usbInk);
-    display_.drawLine(24, 22, 24, 24, usbInk);
-    display_.drawLine(20, 26, 24, 24, usbInk);
-    drawText(display_, 29, kUsbRowY, usbSelected_ ? kGreen : kIdleUsb, "USB TEST",
+    const uint16_t badUsbInk = badUsbSelected_ ? kCyan : kIdleBadUsb;
+    display_.drawLine(20, 18, 20, 29, badUsbInk);
+    display_.drawLine(18, 20, 20, 18, badUsbInk);
+    display_.drawLine(20, 18, 22, 20, badUsbInk);
+    display_.drawLine(16, 23, 16, 25, badUsbInk);
+    display_.drawLine(16, 25, 20, 27, badUsbInk);
+    display_.drawLine(24, 22, 24, 24, badUsbInk);
+    display_.drawLine(20, 26, 24, 24, badUsbInk);
+    drawText(display_, 29, kBadUsbRowY, badUsbSelected_ ? kGreen : kIdleBadUsb, "BadUSB",
              liberationSansNarrow_12ptFontInfo);
 
-    const uint16_t wifiInk = usbSelected_ ? kMuted : kSelectedWifi;
+    const uint16_t wifiInk = badUsbSelected_ ? kMuted : kSelectedWifi;
     display_.drawLine(14, 38, 17, 35, wifiInk);
     display_.drawLine(17, 35, 23, 35, wifiInk);
     display_.drawLine(23, 35, 26, 38, wifiInk);

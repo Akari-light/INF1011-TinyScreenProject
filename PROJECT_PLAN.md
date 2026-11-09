@@ -9,7 +9,7 @@ The team's central implementation plan. Keep requirements, tasks, responsibiliti
 - The team selected **TraceDeck**, a pocket attack-and-deception lab. The vendor OLED baseline and the USB keyboard test in Windows Notepad passed. Arvin is developing TraceDeck solo for now.
 - **Optional if time allows:** AuthenticConfig, the expanded honeypot + Rubber Ducky-style USB + IoT toolkit, browser-trusted HTTPS, and hostname attribution for BadUSB loot.
 - Seven members have TinyScreen+ kits and laptops. One Wi-Fi TinyShield is already on loan. Owners and internal dates are pending. The verified USB baseline toolchain versions are in [README.md](README.md).
-- The PC1 browser upload page is ready for code review. The next USB checkpoint is the TinyScreen+ sequence that creates the Notepad file and submits it through the browser on the unlocked Windows laptop. The hardware and LAN check follows firmware setup. Direct Wi-Fi and the mock IoT service follow later.
+- The PC1 browser upload page is implemented. The TinyScreen+ BadUSB screen can emit the fixed Notepad save sequence. Physical validation of the save on PC2 is pending. Browser upload keystrokes and the integrated LAN check follow. Direct Wi-Fi and the mock IoT service follow later.
 
 ## Assignment baseline
 
@@ -178,3 +178,4 @@ Before submission, test an extracted archive on a clean setup. Check it contains
 | 2026-11-10 | Arvin approved the visible Notepad sequence and HTTPS text-file upload. PC1 stores decoded text and metadata as loot. | The PC hosts TraceHub and the laptop is the target. Physical verification follows sender and firmware setup. |
 | 2026-11-10 | Arvin approved the browser-driven USB demo on the isolated LAN. D08 now uses the stock PC2 browser, D09 covers browser retries, and D10 separates the HTTP demo from the authenticated HTTPS API. Browser-trusted HTTPS is E03. | The PC1 block is ready for review. Firmware and physical verification are pending. |
 | 2026-11-10 | Arvin selected the observed IP as the source identifier for the browser demo. Hostname lookup and nullable hostname storage are optional under E04. | The unique loot ID and UTC receipt time are already stored. Firmware and physical verification are pending. |
+| 2026-11-10 | The firmware adds the BadUSB menu and the fixed Notepad save sequence behind physical ARM and INJECT. The initial destination is `%TEMP%\hello-world.txt`. | TinyScreen+ build and flash checksum passed. PC2 save behavior and OLED checks are pending. Browser automation is the next firmware block. |

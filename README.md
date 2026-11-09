@@ -2,7 +2,7 @@
 
 TraceDeck is an ICT1011 TinyCircuits security lab. The planned USB and Wi-Fi paths use two TinyScreen+ nodes. TraceHub receives lab evidence on PC1, and the Ops Console displays the saved loot as it arrives.
 
-The TinyScreen+ USB keyboard path has passed the Windows Notepad test. The firmware starts on Home with `USB TEST` selected and `WI-FI SOON` as a placeholder.
+The original TinyScreen+ keyboard marker passed the Windows Notepad test. The firmware now starts on Home with `BadUSB` selected and `WI-FI SOON` as a placeholder. The BadUSB Notepad save sequence awaits a physical check on PC2.
 
 See [PROJECT_PLAN.md](PROJECT_PLAN.md) for requirements, architecture decisions, responsibilities, milestones, task status, and team working conventions.
 
@@ -111,7 +111,7 @@ arduino-cli compile --fqbn TinyCircuits:samd:tinyscreen --port $port --upload $e
 
 Check for `Verify successful` in the terminal and a repeating sequence of graphics and text on the OLED. Arvin observed both on a TinyScreen+ with Windows on 8 Nov 2026. [TinyScreen example source](https://github.com/TinyCircuits/TinyCircuits-TinyScreen_Lib/blob/master/examples/TinyScreenBasicExample/TinyScreenBasicExample.ino)
 
-### Build and check USB Test
+### Build and check BadUSB controls
 
 With the OLED text upright, the upper buttons are L1 and R1, and the lower buttons are L2 and R2.
 
@@ -123,7 +123,7 @@ arduino-cli compile --fqbn TinyCircuits:samd:tinyscreen .\firmware\TraceDeck
 arduino-cli compile --fqbn TinyCircuits:samd:tinyscreen --port $port --upload .\firmware\TraceDeck
 ```
 
-1. Power the board on and confirm Home highlights `USB TEST`. Tap L1 (`OPEN`) and confirm the OLED reads `USB TEST`, `SAFE`, and `Ready`.
+1. Power the board on and confirm Home highlights `BadUSB`. Tap L1 (`OPEN`) and confirm the OLED reads `BadUSB`, `SAFE`, and `Ready`.
 2. Tap and release L2 (`ARM`). Confirm `ARMED` appears.
 3. Within 10 seconds, tap R2 (`CANCEL`). Confirm `SAFE` and `Cancelled` appear.
 4. Arm again and wait 10 seconds. Confirm `SAFE` and `Timed out` appear.
@@ -136,39 +136,37 @@ On 8 Nov 2026, Arvin verified startup in SAFE on the original standalone USB Tes
 
 Focus a blank Notepad document for all of these checks. Expect it to stay blank throughout.
 
-1. On Home, tap R1 (up arrow) twice. The selection pointer should move to `WI-FI SOON` and then back to `USB TEST`. Repeat with R2 (down arrow). Both directions wrap.
+1. On Home, tap R1 (up arrow) twice. The selection pointer should move to `WI-FI SOON` and then back to `BadUSB`. Repeat with R2 (down arrow). Both directions wrap.
 2. Highlight `WI-FI SOON` and tap L1 (`OPEN`). Home should stay visible with the same selection.
-3. Highlight `USB TEST`. Hold L1 until USB Test opens in `SAFE`. With L1 still held, also hold L2. Release L1 while keeping L2 held for a second. The screen should stay `SAFE`. Release L2.
-4. Tap L2 to arm, then hold R2 (`CANCEL`). The screen should return to `SAFE` and stay on USB Test. Release R2 and hold it again (`BACK`). Home should open and the selection should stay on `USB TEST` until a fresh press.
+3. Highlight `BadUSB`. Hold L1 until BadUSB opens in `SAFE`. With L1 still held, also hold L2. Release L1 while keeping L2 held for a second. The screen should stay `SAFE`. Release L2.
+4. Tap L2 to arm, then hold R2 (`CANCEL`). The screen should return to `SAFE` and stay on BadUSB. Release R2 and hold it again (`BACK`). Home should open and the selection should stay on `BadUSB` until a fresh press.
 
-On 8 Nov 2026, Arvin verified both wrap directions, the Wi-Fi placeholder, held-button transitions, and cancel followed by Back on the TinyScreen+. Notepad stayed blank throughout.
+On 8 Nov 2026, Arvin verified both wrap directions, the Wi-Fi placeholder, held-button transitions, and cancel followed by Back on the TinyScreen+ with the original USB Test labels. Notepad stayed blank throughout.
 
 ### Check the OLED theme
 
 On Home, check that the cyan pointer and brighter text clearly mark the selected row. The USB and Wi-Fi icons identify the two operations. A short divider separates the violet `OPEN` control from the larger green `HOME` title. The violet arrows mark the right-hand navigation buttons. `SOON` stays gray, and `OPEN` dims when Wi-Fi is selected.
 
-Open USB Test and check the large green `SAFE` label and shield. Arm with L2 and check the amber `ARMED` label, warning icon, and countdown. Each amber tick represents one second. Let the countdown reach `01s` and confirm the display returns to `SAFE` with `Timed out`. The state label and controls should stay steady as the timer changes.
+Open BadUSB and check the large green `SAFE` label and shield. Arm with L2 and check the amber `ARMED` label, warning icon, and countdown. Each amber tick represents one second. Let the countdown reach `01s` and confirm the display returns to `SAFE` with `Timed out`. The state label and controls should stay steady as the timer changes.
 
 On 8 Nov 2026, Arvin checked the icons and countdown on the TinyScreen+ and confirmed the final header separation, muted Wi-Fi text, and saturated green on the physical OLED. The final TinyScreen+ build used 30,900 bytes and passed upload verification.
 
-### Check keyboard output in Notepad
+### Check the BadUSB Notepad save
 
-After uploading TraceDeck, open USB Test and focus a blank Notepad document on the test laptop. Use the US keyboard layout and turn Caps Lock off. The marker is `tracedeck usb test` with no newline. The OLED reports `Send attempted` when the firmware calls the Arduino Keyboard library. Notepad shows what the laptop actually received. [Arduino Keyboard library](https://github.com/arduino-libraries/Keyboard/tree/1.0.7)
+With the owned PC2 laptop unlocked, use the English (US) keyboard layout with Caps Lock off. This block sends a fixed Notepad sequence. It opens Windows Run, starts Notepad, opens a blank document, types `hello world`, and sends Save As keystrokes for `%TEMP%\hello-world.txt`. The OLED shows `KEYS SENT` after issuing the sequence. Check the file on PC2 to confirm the save. [Arduino Keyboard library](https://github.com/arduino-libraries/Keyboard/tree/1.0.7)
 
-1. In `SAFE`, tap R1. Expect the document to stay blank.
-2. Tap and release L2 (`ARM`), then tap R1 (`SEND`) within 10 seconds. Expect one exact marker and a return to `SAFE`.
-3. Start with a blank document again. Tap and release L2, then press and hold R1 for 3 seconds. Expect one exact marker, including after releasing R1.
-4. Start with a blank document. Arm with L2, cancel with R2, then tap R1. Expect the document to stay blank. Repeat with an expired arming window.
+1. In `SAFE`, tap R1. Expect PC2 to stay on its current screen.
+2. Arm with L2, cancel with R2, then tap R1. Expect the same result. Repeat after letting the arming window expire.
+3. Tap and release L2 (`ARM`), then tap R1 (`INJECT`) within 10 seconds. Confirm the expected file exists and contains exactly `hello world`.
+4. Move the demo file aside before another save test. Arm again and hold R1 through the sequence. Check that PC2 receives just one sequence and that the board returns to `SAFE`.
 
-On 8 Nov 2026, Arvin confirmed the four-button orientation and passed these checks on the TinyScreen+ and a Windows laptop. Tapping or holding R1 after arming entered exactly one marker and returned the screen to SAFE. R1 produced no text when unarmed, cancelled, or expired.
+If the destination file already exists, Windows may show a replacement prompt. The sequence ends at the Save action and leaves the prompt for the operator.
 
-Arvin repeated the SAFE startup and unarmed, held SEND, cancel, and timeout checks on the same setup after the button debounce was moved into a shared reader. All passed on 8 Nov 2026.
-
-On 8 Nov 2026, Arvin repeated all four Notepad checks with the icon and countdown layout. All passed. A one-marker SEND check also passed after the header and gray palette were tuned. The subsequent green-only adjustment was checked on the OLED.
+The 10 Nov 2026 TinyScreen+ build used 31,224 bytes and passed flash verification. The save and timing checks are pending on PC2. The 8 Nov 2026 physical checks passed for the prior `tracedeck usb test` marker, including unarmed, cancelled, expired, and held-SEND cases.
 
 ## Repository layout
 
-The USB Test sketch is in `firmware/TraceDeck/`. Add the remaining directories when their first real files are needed.
+The TraceDeck sketch is in `firmware/TraceDeck/`. Add the remaining directories when their first real files are needed.
 
 | Directory | Purpose |
 | --- | --- |

@@ -1,32 +1,29 @@
-#include "UsbTestScreen.h"
+#include "BadUsbScreen.h"
 
-#include <Keyboard.h>
-
+#include "BadUsbKeyboard.h"
 #include "TerminalTheme.h"
 
 namespace {
 constexpr uint8_t kArmButton = TSButtonLowerLeft;
 constexpr uint8_t kCancelOrBackButton = TSButtonLowerRight;
-constexpr uint8_t kSendButton = TSButtonUpperRight;
+constexpr uint8_t kInjectButton = TSButtonUpperRight;
 constexpr uint32_t kMsPerSecond = 1000;
 constexpr uint8_t kArmWindowSeconds = 10;
 constexpr uint32_t kArmWindowMs = kArmWindowSeconds * kMsPerSecond;
-constexpr char kTestMarker[] = "tracedeck usb test";
 constexpr uint16_t kSpent = TerminalTheme::color(88, 55, 30);
 constexpr uint16_t kCancel = TerminalTheme::color(255, 141, 128);
 }
 
-UsbTestScreen::UsbTestScreen(TinyScreen &display) : display_(display) {}
+BadUsbScreen::BadUsbScreen(TinyScreen &display) : display_(display) {}
 
-void UsbTestScreen::enter() {
+void BadUsbScreen::enter() {
     armed_ = false;
-    Keyboard.begin(KeyboardLayout_en_US);
     TerminalTheme::drawFrame(display_);
-    TerminalTheme::drawText(display_, 4, 2, TerminalTheme::kCyan, "USB TEST");
+    TerminalTheme::drawText(display_, 4, 2, TerminalTheme::kCyan, "BadUSB");
     drawState("Ready");
 }
 
-bool UsbTestScreen::update(uint8_t pressed, uint32_t now) {
+bool BadUsbScreen::update(uint8_t pressed, uint32_t now) {
     const uint32_t elapsed = now - armedAt_;
     if (armed_ && elapsed >= kArmWindowMs) {
         armed_ = false;
@@ -34,11 +31,13 @@ bool UsbTestScreen::update(uint8_t pressed, uint32_t now) {
     } else if (armed_ && pressed == kCancelOrBackButton) {
         armed_ = false;
         drawState("Cancelled");
-    } else if (armed_ && pressed == kSendButton) {
+    } else if (armed_ && pressed == kInjectButton) {
         armed_ = false;
         if (USBDevice.configured()) {
-            Keyboard.print(kTestMarker);
-            drawState("Send attempted");
+            clearStatusArea();
+            TerminalTheme::drawText(display_, 20, 26, TerminalTheme::kAmber, "Sending keys");
+            sendNotepadSaveKeys();
+            drawState(USBDevice.configured() ? "KEYS SENT" : "USB unavailable");
         } else {
             drawState("USB unavailable");
         }
@@ -59,13 +58,17 @@ bool UsbTestScreen::update(uint8_t pressed, uint32_t now) {
     return false;
 }
 
-void UsbTestScreen::drawState(const char *message) {
-    using namespace TerminalTheme;
-
+void BadUsbScreen::clearStatusArea() {
     // Clear the changing areas while keeping the frame and title in place.
-    display_.clearWindow(61, 2, 33, 10);
+    display_.clearWindow(50, 2, 44, 10);
     display_.clearWindow(4, 16, 91, 33);
     display_.clearWindow(4, 52, 91, 11);
+}
+
+void BadUsbScreen::drawState(const char *message) {
+    using namespace TerminalTheme;
+
+    clearStatusArea();
 
     drawText(display_, 20, 16, armed_ ? kAmber : kGreen, armed_ ? "ARMED" : "SAFE",
              liberationSansNarrow_14ptFontInfo);
@@ -78,7 +81,7 @@ void UsbTestScreen::drawState(const char *message) {
         display_.drawLine(11, 22, 11, 26, kAmber);
         display_.drawLine(11, 28, 11, 28, kAmber);
 
-        drawText(display_, 61, 2, kGreen, "SEND");
+        drawText(display_, 50, 2, kGreen, "INJECT");
         display_.drawLine(88, 3, 92, 7, kGreen);
         display_.drawLine(92, 7, 88, 11, kGreen);
         drawText(display_, 48, 52, kCancel, "CANCEL");
@@ -102,7 +105,7 @@ void UsbTestScreen::drawState(const char *message) {
     }
 }
 
-void UsbTestScreen::drawCountdown(uint8_t seconds) {
+void BadUsbScreen::drawCountdown(uint8_t seconds) {
     displayedSeconds_ = seconds;
     display_.clearWindow(69, 33, 25, 15);
     char label[] = "00s";

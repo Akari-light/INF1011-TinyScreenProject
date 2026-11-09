@@ -2,15 +2,16 @@
 
 #include <TinyScreen.h>
 
-class UsbTestScreen {
+class BadUsbScreen {
 public:
-    explicit UsbTestScreen(TinyScreen &display);
+    explicit BadUsbScreen(TinyScreen &display);
 
     void enter();
     // Returns true when a Back press requests Home.
     bool update(uint8_t pressed, uint32_t now);
 
 private:
+    void clearStatusArea();
     void drawState(const char *message);
     void drawCountdown(uint8_t seconds);
 
