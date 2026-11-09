@@ -2,7 +2,7 @@
 
 TraceDeck is an ICT1011 TinyCircuits security lab. The planned USB and Wi-Fi paths use two TinyScreen+ nodes. TraceHub receives lab evidence on PC1, and the Ops Console displays the saved loot as it arrives.
 
-The original TinyScreen+ keyboard marker passed the Windows Notepad test. The firmware now starts on Home with `BadUSB` selected and `WI-FI SOON` as a placeholder. The BadUSB Notepad save sequence awaits a physical check on PC2.
+The TinyScreen+ starts on Home with `BadUSB` selected and `WI-FI SOON` as a placeholder. Arvin confirmed that the BadUSB Notepad sequence saved `hello-world.txt` in `%TEMP%` on PC2.
 
 See [PROJECT_PLAN.md](PROJECT_PLAN.md) for requirements, architecture decisions, responsibilities, milestones, task status, and team working conventions.
 
@@ -162,7 +162,7 @@ With the owned PC2 laptop unlocked, use the English (US) keyboard layout with Ca
 
 If the destination file already exists, Windows may show a replacement prompt. The sequence ends at the Save action and leaves the prompt for the operator.
 
-The 10 Nov 2026 TinyScreen+ build used 31,224 bytes and passed flash verification. The save and timing checks are pending on PC2. The 8 Nov 2026 physical checks passed for the prior `tracedeck usb test` marker, including unarmed, cancelled, expired, and held-SEND cases.
+The 10 Nov 2026 TinyScreen+ build used 31,224 bytes and passed flash verification. Arvin confirmed that the board sequence saved `%TEMP%\hello-world.txt` on PC2. The exact file contents, OLED feedback, and button regression checks are pending for this build. The 8 Nov 2026 physical checks passed for the prior `tracedeck usb test` marker, including unarmed, cancelled, expired, and held-SEND cases.
 
 ## Repository layout
 
