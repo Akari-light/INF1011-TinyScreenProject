@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TraceDeck Ops Console</title>
+</head>
+<body>
+    <main>
+        <h1>TraceDeck Ops Console</h1>
+        <section id="receipt-feed" data-latest="{{ receipts[0].receipt_id if receipts else '' }}">
+            <h2>Latest 50 receipts</h2>
+            {% if receipts %}
+            <ol>
+                {% for receipt in receipts %}
+                <li>
+                    <p>{{ receipt.message }}</p>
+                    <dl>
+                        <dt>Helper ID</dt>
+                        <dd>{{ receipt.helper_id }}</dd>
+                        <dt>Reported hostname</dt>
+                        <dd>{{ receipt.reported_hostname }}</dd>
+                        <dt>Peer IP observed by PC1</dt>
+                        <dd>{{ receipt.observed_peer_ip }}</dd>
+                        <dt>Received by PC1 (UTC)</dt>
+                        <dd><time datetime="{{ receipt.received_at }}">{{ receipt.received_at }}</time></dd>
+                        <dt>Receipt ID</dt>
+                        <dd><code>{{ receipt.receipt_id }}</code></dd>
+                    </dl>
+                </li>
+                {% endfor %}
+            </ol>
+            {% else %}
+            <p>Waiting for the first receipt.</p>
+            {% endif %}
+        </section>
+    </main>
+    <script>
+        async function refreshReceipts() {
+            try {
+                const response = await fetch(window.location.pathname, { cache: "no-store" });
+                if (response.ok) {
+                    const page = new DOMParser().parseFromString(await response.text(), "text/html");
+                    const feed = document.getElementById("receipt-feed");
+                    const updatedFeed = page.getElementById("receipt-feed");
+                    if (updatedFeed && updatedFeed.dataset.latest !== feed.dataset.latest) {
+                        feed.replaceWith(updatedFeed);
+                    }
+                }
+            } catch {
+                // Keep checking if the console is restarting.
+            }
+            window.setTimeout(refreshReceipts, 2000);
+        }
+
+        window.setTimeout(refreshReceipts, 2000);
+    </script>
+</body>
+</html>

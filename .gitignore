@@ -1,2 +1,5 @@
 # Personal files and local working material
 /.local/
+
+# Python bytecode
+__pycache__/

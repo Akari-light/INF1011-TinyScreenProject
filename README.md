@@ -1,6 +1,6 @@
 # TraceDeck
 
-TraceDeck is an ICT1011 TinyCircuits security lab. Two TinyScreen+ nodes run controlled USB keyboard and Wi-Fi interactions against a laptop-hosted IoT decoy. A live timeline links each lab run to its recorded events.
+TraceDeck is an ICT1011 TinyCircuits security lab. The planned USB and Wi-Fi paths use two TinyScreen+ nodes. TraceHub receives lab evidence on PC1, and the Ops Console displays the saved receipts as they arrive.
 
 The TinyScreen+ USB keyboard path has passed the Windows Notepad test. The firmware starts on Home with `USB TEST` selected and `WI-FI SOON` as a placeholder.
 
@@ -12,10 +12,68 @@ See [PROJECT_PLAN.md](PROJECT_PLAN.md) for requirements, architecture decisions,
 | --- | --- |
 | USB keyboard node | TinyScreen+ ASM2022 with a USB data cable |
 | Wi-Fi node | TinyScreen+ ASM2022 with the borrowed ASD2123-R Wi-Fi TinyShield |
-| Lab host | Team laptop running the input app, IoT decoy, and dashboard on a private 2.4 GHz network |
+| PC1 | Windows lab PC hosting the Ops Console, HTTPS receipt intake, and the later mock IoT service |
+| PC2 | Unlocked Windows lab PC for the prepared hotkey helper |
 | USB toolchain | Arduino CLI 1.5.1, Arduino SAMD 1.8.14, TinyCircuits SAMD 1.1.0, TinyScreen 1.1.0, Arduino Keyboard 1.0.7 |
 
 ## Setup and operation
+
+### Start the TraceDeck Ops Console on PC1
+
+Use Python 3.11 and open PowerShell in the project root. The virtual environment and SQLite database live in the current user's local application data.
+
+```powershell
+$traceDeckEnvironment = Join-Path $env:LOCALAPPDATA 'TraceDeck\venv'
+py -3.11 -m venv $traceDeckEnvironment
+$traceDeckPython = Join-Path $traceDeckEnvironment 'Scripts\python.exe'
+& $traceDeckPython -m pip install -r .\tracehub\requirements.txt
+& $traceDeckPython -m flask --app tracehub --no-debug run --host 127.0.0.1
+```
+
+Open `http://127.0.0.1:5000` on PC1. The dashboard checks for new receipts every two seconds and shows the newest 50. SQLite retains the saved receipts across restarts in `%LOCALAPPDATA%\TraceDeck\tracehub.sqlite3`.
+
+### Start HTTPS receipt intake on PC1
+
+Use a second PowerShell window in the project root. Find PC1's private lab-network IPv4 address with `ipconfig`. Keep `helpers.json` and the TLS private key in the Flask instance directory under local application data.
+
+```powershell
+$traceDeckData = Join-Path $env:LOCALAPPDATA 'TraceDeck'
+$traceDeckPython = Join-Path $traceDeckData 'venv\Scripts\python.exe'
+$credentialsFile = Join-Path $traceDeckData 'helpers.json'
+if (-not (Test-Path -LiteralPath $credentialsFile)) {
+    $helperToken = & $traceDeckPython -c "import secrets; print(secrets.token_urlsafe(32))"
+    @{ 'pc2-a' = $helperToken } | ConvertTo-Json | Set-Content -LiteralPath $credentialsFile -Encoding utf8
+}
+```
+
+`helpers.json` maps each helper ID to its own generated token. Add a new entry and restart intake to enroll another helper. Transfer only the matching token and PC1's public certificate to each helper.
+
+Create a certificate once for PC1's private address. The commands use OpenSSL bundled with Git for Windows. Generate a replacement certificate if the address changes or the certificate expires.
+
+```powershell
+$pc1Ip = Read-Host 'PC1 private IPv4 address'
+$gitRoot = Split-Path (Split-Path (Get-Command git).Source)
+$openssl = Join-Path $gitRoot 'usr\bin\openssl.exe'
+$intakeCert = Join-Path $traceDeckData 'intake-cert.pem'
+$intakeKey = Join-Path $traceDeckData 'intake-key.pem'
+& $openssl req -x509 -newkey rsa:2048 -noenc -days 30 -subj '/CN=TraceHub PC1' -addext "subjectAltName=IP:$pc1Ip" -addext 'basicConstraints=critical,CA:FALSE' -addext 'extendedKeyUsage=serverAuth' -keyout $intakeKey -out $intakeCert
+```
+
+```powershell
+& $traceDeckPython -m flask --app "tracehub:create_app('intake')" --no-debug run --host $pc1Ip --port 8443 --cert $intakeCert --key $intakeKey
+```
+
+The intake profile exposes `POST /api/v1/receipts` on the chosen private interface. A trusted HTTPS client uses the public certificate to validate PC1 and supplies `Authorization: Bearer <helper token>`. The JSON body has this shape. Generate a new UUID for each deliberate trigger and reuse it if you retry that submission.
+
+```json
+{
+    "submission_id": "f157bfa0-3f6d-4ab2-9abd-bc1381592c1d",
+    "hostname": "PC2-EXAMPLE",
+    "message": "TraceDeck synthetic lab message"
+}
+```
+
+For a local intake check, send the example through an enrolled HTTPS client and look for HTTP 201 and a receipt ID. The same ID should appear in the console. Repeating the submission with the same token and body returns HTTP 200 and the original receipt ID. A wrong token returns HTTP 401. A new submission ID with the valid token creates a new receipt. Restart the console to check that the receipts are still visible.
 
 ### Set up the TinyScreen+ on Windows
 
@@ -107,11 +165,12 @@ The USB Test sketch is in `firmware/TraceDeck/`. Add the remaining directories w
 | Directory | Purpose |
 | --- | --- |
 | `firmware/` | Device firmware and the selected toolchain's build configuration |
+| `tracehub/` | PC1 Ops Console, HTTPS intake, and SQLite receipt storage |
 | `hardware/` | Component list, pin assignments, wiring diagrams, and editable design files |
 | `tests/` | System test procedures and selected reproducible evidence |
 | `docs/` | Supporting diagrams, source acknowledgements, and demo/submission material |
 
-Use the chosen toolchain's native layout inside `firmware/`. Add a directory for the companion application when laptop development begins.
+Use the chosen toolchain's native layout inside `firmware/`.
 
 ## Verification and reused material
 
