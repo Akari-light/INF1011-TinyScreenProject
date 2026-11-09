@@ -4,16 +4,16 @@ from flask import Blueprint, abort, current_app, render_template, request
 
 from . import database
 
-ops = Blueprint("ops", __name__)
+dashboard_blueprint = Blueprint("dashboard", __name__)
 
 
-@ops.before_request
+@dashboard_blueprint.before_request
 def require_local_operator():
     if request.remote_addr != "127.0.0.1":
         abort(403)
 
 
-@ops.get("/")
+@dashboard_blueprint.get("/")
 def show_dashboard():
-    receipts = database.list_receipts(current_app.config["DATABASE_PATH"])
-    return render_template("ops_dashboard.html", receipts=receipts)
+    loot_entries = database.list_loot(current_app.config["DATABASE_PATH"])
+    return render_template("ops_dashboard.html", loot_entries=loot_entries)
