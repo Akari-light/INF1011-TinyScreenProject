@@ -1,4 +1,6 @@
 #pragma once
 
+#include "../../BadUsbPayload.h"
+
 bool dropUploadHasTraceHubUrl();
-void sendBadUsbDemoKeys();
+void sendBadUsbDemoKeys(const BadUsbProgress &progress);

@@ -134,9 +134,9 @@ arduino-cli compile --fqbn TinyCircuits:samd:tinyscreen --build-property "compil
 
 1. Power the board on and confirm Home highlights `BadUSB`. Tap L1 (`OPEN`) to reach `PAYLOADS`. Confirm it lists `Drop & Upload`, `Payload 2`, and `Payload 3`. The last two rows show `SOON`.
 2. With `Drop & Upload` selected, tap L1 again. Confirm the execution screen starts in `SAFE` and shows `Notepad only` if `TRACEHUB_PC1_IP` is absent or `Upload enabled` if you built with the address. `Upload enabled` describes the firmware configuration.
-3. Tap and release R2 (`ARM`). Confirm `ARMED` appears.
-4. Within 10 seconds, tap L2 (`CANCEL`). Confirm `SAFE` and `Cancelled` appear.
-5. Arm again and wait 10 seconds. Confirm `SAFE` and `Timed out` appear.
+3. Tap and release R2 (`ARM`). Confirm `ARMED`, `60s`, and ten full amber segments appear. At `59s`, the rightmost segment should show five-sixths fill.
+4. Within 60 seconds, tap L2 (`CANCEL`). Confirm the gauge clears and `SAFE` and `Cancelled` appear.
+5. Arm again and wait 60 seconds. Confirm the last segment stays lit through `01s`, then the gauge clears and `SAFE` and `Timed out` appear.
 6. Hold R2 through a timeout. Confirm the screen stays `SAFE` until you release the button and press it again.
 7. In `SAFE`, tap L2 (`BACK`) to return to the payload menu. Release L2 and tap it again to return to Home.
 
@@ -158,17 +158,17 @@ On 8 Nov 2026, Arvin verified both wrap directions, the Wi-Fi placeholder, held-
 
 On Home, check that the cyan pointer and brighter text clearly mark the selected row. The USB and Wi-Fi icons identify the two operations. A short divider separates the violet `OPEN` control from the larger green `HOME` title. The violet arrows mark the right-hand navigation buttons. `SOON` stays gray, and `OPEN` dims when Wi-Fi is selected.
 
-Open BadUSB and check that the three payload rows, selection pointer, and `SOON` labels are legible. Open `Drop & Upload` and check the large green `SAFE` label, shield, and build status. Arm with R2 and check the amber `ARMED` label, warning icon, and countdown. Each amber tick represents one second. Let the countdown reach `01s` and confirm the display returns to `SAFE` with `Timed out`. The state label and controls should stay steady as the timer changes.
+Open BadUSB and check that the three payload rows, selection pointer, and `SOON` labels are legible. Open `Drop & Upload` and check the large green `SAFE` label, shield, and build status. Arm with R2 and check the amber `ARMED` label, warning icon, and seconds readout. The ten slanted segments each represent six seconds. The rightmost lit segment loses one-sixth of its fill on every tick, then stays visible as a dim outline. The readout and lit segments fade from amber to red-orange. From `06s` through `01s`, the last segment and the digits gently dim and brighten. Check that the final one-sixth fill and `01s` stay legible at the dimmest point.
 
 On 8 Nov 2026, Arvin checked the icons and countdown on the TinyScreen+ and confirmed the final header separation, muted Wi-Fi text, and saturated green on the physical OLED. The final TinyScreen+ build used 30,900 bytes and passed upload verification.
 
 ### Check the BadUSB Notepad save
 
-With the owned PC2 laptop unlocked, use the English (US) keyboard layout with Caps Lock off. The board opens Windows Run, starts Notepad, opens a blank document, types `hello world`, and sends Save As keystrokes for `%TEMP%\hello-world.txt`. The OLED shows `KEYS SENT` after issuing the sequence. Check the file on PC2 to confirm the save. [Arduino Keyboard library](https://github.com/arduino-libraries/Keyboard/tree/1.0.7)
+With the owned PC2 laptop unlocked, use the English (US) keyboard layout with Caps Lock off. The board opens Windows Run, starts Notepad, opens a blank document, types `hello world`, and sends Save As keystrokes for `%TEMP%\hello-world.txt`. The OLED shows `INJECTING` with a spinner and a bar that fills across the timed steps, then `KEYS SENT` after the board issues the sequence. Check the file on PC2 to confirm the save. [Arduino Keyboard library](https://github.com/arduino-libraries/Keyboard/tree/1.0.7)
 
 1. In `SAFE`, tap R1. Expect PC2 to stay on its current screen.
 2. Arm with R2, cancel with L2, then tap R1. Expect the same result. Repeat after letting the arming window expire.
-3. Tap and release R2 (`ARM`), then tap R1 (`INJECT`) within 10 seconds. Confirm the expected file exists and contains exactly `hello world`.
+3. Tap and release R2 (`ARM`), then tap R1 (`INJECT`) within 60 seconds. Confirm the expected file exists and contains exactly `hello world`.
 4. Move the demo file aside before another save test. Arm again and hold R1 through the sequence. Check that PC2 receives just one sequence and that the board returns to `SAFE`.
 
 If the destination file already exists, Windows may show a replacement prompt. The sequence ends at the Save action and leaves the prompt for the operator.

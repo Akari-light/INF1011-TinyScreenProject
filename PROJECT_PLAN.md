@@ -8,8 +8,8 @@ TraceDeck is a controlled ICT1011 security lab. An owned TinyScreen+ demonstrate
 
 - **BadUSB base verified once.** Arvin reported a deliberate run on PC2. PC1 stored one browser upload for the expected 11-byte synthetic file. Repeat and button regression checks are pending.
 - **Firmware layout committed.** The Arduino sketch remains at firmware/TraceDeck/TraceDeck.ino. Shared input and UI code live under src/input/ and src/ui/. BadUSB code lives under src/badusb/ with Drop & Upload in its own payload folder. The reorganization built in both variants at 024c89d.
-- **Payload menu in review.** The working tree adds Home → BadUSB payload menu → Drop & Upload. It includes two disabled slots. Both firmware variants built and simulated navigation and arming checks passed. Physical OLED and PC2 checks are pending.
-- **Next.** Finish reviewing the menu, then work on the 60-second gauge, Passive and Active modes, and the Ops Console redesign. The current firmware uses manual ARM → INJECT and a 10-second arming window.
+- **Payload menu committed.** Home opens the BadUSB payload menu, which lists Drop & Upload and two disabled slots. Both firmware variants built and simulated navigation and arming checks passed at ba2a446.
+- **60-second gauge in review.** The firmware uses manual ARM → INJECT. The countdown shows exact seconds alongside ten segments, fades from amber to red-orange, and pulses for the final six seconds. During injection, the OLED shows a spinner and progress bar. Passive and Active modes and the Ops Console redesign follow.
 
 Setup, toolchain versions, and detailed test steps are in [README.md](README.md).
 
@@ -42,7 +42,7 @@ Track build, simulation and physical results separately. Record the revision, te
 | Work | Status | Exit check |
 | --- | --- | --- |
 | BadUSB payload menu | Review | On the OLED, open and back out of Drop & Upload, verify the disabled slots and held-button transitions, and run the configured demo once. |
-| 60-second arming gauge | Planned | Show the exact seconds and ten slanted segments at six seconds each. Verify the start, final second, cancel and expiry on the OLED. |
+| 60-second arming gauge | Review | Verify the `60s` to `59s` change, one-sixth of a segment draining per second from right to left, the final red-orange pulse through `01s`, cancel, and expiry on the OLED. |
 | Passive and Active triggers | Planned | Open the payload in Passive and Disarmed. Passive requires ARM then INJECT. Active requires ARM and one verified fresh USB connection. First prove connection detection on the battery-powered board with a status-only check. Test existing connections, reconnects, cancellation and expiry before enabling automatic output. |
 | Ops Console redesign | Planned | Make the latest receipt, source IP, time and content preview easy to scan in the dark terminal layout. Verify live updates and access to full file metadata. |
 | Wi-Fi path and combined rehearsal | Planned after the BadUSB blocks | Implement the PC1 mock IoT endpoint and the direct board request. Rehearse both paths using the same setup for the video and live demo. |
