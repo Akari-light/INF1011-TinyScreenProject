@@ -1,15 +1,17 @@
 #include <TinyScreen.h>
 
+#include "src/badusb/BadUsbPayloadMenu.h"
 #include "src/badusb/BadUsbScreen.h"
 #include "src/input/ButtonReader.h"
 #include "src/ui/HomeScreen.h"
 
 namespace {
-enum class Screen { Home, BadUsb };
+enum class Screen { Home, BadUsbPayloadMenu, BadUsbExecution };
 
 TinyScreen display(TinyScreenPlus);
 ButtonReader buttons(display);
 HomeScreen home(display);
+BadUsbPayloadMenu payloadMenu(display);
 BadUsbScreen badUsb(display);
 Screen screen = Screen::Home;
 }
@@ -26,13 +28,29 @@ void loop() {
     const uint32_t now = millis();
     const uint8_t pressed = buttons.readPress(now);
     // Only the current screen receives the press. The reader keeps its held state.
-    if (screen == Screen::Home) {
+    switch (screen) {
+    case Screen::Home:
         if (home.openBadUsbOnPress(pressed)) {
-            screen = Screen::BadUsb;
-            badUsb.enter();
+            screen = Screen::BadUsbPayloadMenu;
+            payloadMenu.enter();
         }
-    } else if (badUsb.update(pressed, now)) {
-        screen = Screen::Home;
-        home.enter();
+        break;
+    case Screen::BadUsbPayloadMenu: {
+        const BadUsbPayloadMenu::Action action = payloadMenu.update(pressed);
+        if (action == BadUsbPayloadMenu::Action::Open) {
+            screen = Screen::BadUsbExecution;
+            badUsb.enter(payloadMenu.selectedPayload());
+        } else if (action == BadUsbPayloadMenu::Action::Back) {
+            screen = Screen::Home;
+            home.enter();
+        }
+        break;
+    }
+    case Screen::BadUsbExecution:
+        if (badUsb.update(pressed, now)) {
+            screen = Screen::BadUsbPayloadMenu;
+            payloadMenu.enter();
+        }
+        break;
     }
 }

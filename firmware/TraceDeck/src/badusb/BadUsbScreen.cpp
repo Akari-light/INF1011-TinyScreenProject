@@ -1,11 +1,10 @@
 #include "BadUsbScreen.h"
 
-#include "payloads/drop_upload/DropUpload.h"
 #include "../ui/TerminalTheme.h"
 
 namespace {
-constexpr uint8_t kArmButton = TSButtonLowerLeft;
-constexpr uint8_t kCancelOrBackButton = TSButtonLowerRight;
+constexpr uint8_t kArmButton = TSButtonLowerRight;
+constexpr uint8_t kCancelOrBackButton = TSButtonLowerLeft;
 constexpr uint8_t kInjectButton = TSButtonUpperRight;
 constexpr uint32_t kMsPerSecond = 1000;
 constexpr uint8_t kArmWindowSeconds = 10;
@@ -16,11 +15,11 @@ constexpr uint16_t kCancel = TerminalTheme::color(255, 141, 128);
 
 BadUsbScreen::BadUsbScreen(TinyScreen &display) : display_(display) {}
 
-void BadUsbScreen::enter() {
+void BadUsbScreen::enter(const BadUsbPayload &payload) {
+    payload_ = &payload;
     armed_ = false;
     TerminalTheme::drawFrame(display_);
-    TerminalTheme::drawText(display_, 4, 2, TerminalTheme::kCyan, "BadUSB");
-    drawState("Ready");
+    drawState(payload_->readyMessage);
 }
 
 bool BadUsbScreen::update(uint8_t pressed, uint32_t now) {
@@ -35,8 +34,9 @@ bool BadUsbScreen::update(uint8_t pressed, uint32_t now) {
         armed_ = false;
         if (USBDevice.configured()) {
             clearStatusArea();
+            TerminalTheme::drawText(display_, 4, 2, TerminalTheme::kCyan, payload_->label);
             TerminalTheme::drawText(display_, 20, 26, TerminalTheme::kAmber, "Sending keys");
-            sendBadUsbDemoKeys();
+            payload_->run();
             drawState(USBDevice.configured() ? "KEYS SENT" : "USB unavailable");
         } else {
             drawState("USB unavailable");
@@ -59,8 +59,8 @@ bool BadUsbScreen::update(uint8_t pressed, uint32_t now) {
 }
 
 void BadUsbScreen::clearStatusArea() {
-    // Clear the changing areas while keeping the frame and title in place.
-    display_.clearWindow(50, 2, 44, 10);
+    // Clear the changing areas while keeping the frame in place.
+    display_.clearWindow(4, 2, 91, 10);
     display_.clearWindow(4, 16, 91, 33);
     display_.clearWindow(4, 52, 91, 11);
 }
@@ -70,6 +70,7 @@ void BadUsbScreen::drawState(const char *message) {
 
     clearStatusArea();
 
+    drawText(display_, 4, 2, kCyan, armed_ ? "BadUSB" : payload_->label);
     drawText(display_, 20, 16, armed_ ? kAmber : kGreen, armed_ ? "ARMED" : "SAFE",
              liberationSansNarrow_14ptFontInfo);
 
@@ -84,9 +85,9 @@ void BadUsbScreen::drawState(const char *message) {
         drawText(display_, 50, 2, kGreen, "INJECT");
         display_.drawLine(88, 3, 92, 7, kGreen);
         display_.drawLine(92, 7, 88, 11, kGreen);
-        drawText(display_, 48, 52, kCancel, "CANCEL");
-        display_.drawLine(87, 54, 93, 60, kCancel);
-        display_.drawLine(93, 54, 87, 60, kCancel);
+        drawText(display_, 4, 52, kCancel, "CANCEL");
+        display_.drawLine(44, 54, 50, 60, kCancel);
+        display_.drawLine(50, 54, 44, 60, kCancel);
     } else {
         // Shield and check mark for SAFE.
         display_.drawLine(5, 20, 17, 20, kGreen);
@@ -98,10 +99,8 @@ void BadUsbScreen::drawState(const char *message) {
         display_.drawLine(10, 27, 14, 23, kGreen);
 
         drawText(display_, 20, 36, kMuted, message);
-        drawText(display_, 4, 52, kAmber, "ARM");
-        drawText(display_, 61, 52, kControl, "BACK");
-        display_.drawLine(91, 53, 87, 57, kControl);
-        display_.drawLine(87, 57, 91, 61, kControl);
+        drawText(display_, 4, 52, kControl, "BACK");
+        drawText(display_, 72, 52, kAmber, "ARM");
     }
 }
 

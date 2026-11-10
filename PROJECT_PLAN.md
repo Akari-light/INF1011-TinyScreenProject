@@ -1,19 +1,64 @@
 # TraceDeck project plan
 
-Last updated: 2026-11-10 (Asia/Singapore).
+Last updated 2026-11-10 (Asia/Singapore).
 
-The team's central implementation plan. Keep requirements, tasks, responsibilities, milestones, decisions, and progress here. Use README.md for setup and operation.
+TraceDeck is a controlled ICT1011 security lab. An owned TinyScreen+ demonstrates a USB keyboard interaction on PC2, and the TraceHub Ops Console on PC1 shows the evidence it received. The next system path is a direct Wi-Fi test from a second TinyScreen+ to a simulated IoT device.
 
-## Current position
+## Current checkpoint
 
-- The team selected **TraceDeck**, a pocket attack-and-deception lab. The vendor OLED baseline and the USB keyboard test in Windows Notepad passed. Arvin is developing TraceDeck solo for now.
-- **Optional if time allows:** AuthenticConfig, the expanded honeypot + Rubber Ducky-style USB + IoT toolkit, browser-trusted HTTPS, and hostname attribution for BadUSB loot.
-- Seven members have TinyScreen+ kits and laptops. One Wi-Fi TinyShield is already on loan. Owners and internal dates are pending. The verified USB baseline toolchain versions are in [README.md](README.md).
-- Arvin confirmed a deliberate BadUSB injection on PC2 completed the Notepad save and browser upload to PC1. The repeat and button regression checks are pending. Direct Wi-Fi and the mock IoT service follow later.
+- **BadUSB base verified once.** Arvin reported a deliberate run on PC2. PC1 stored one browser upload for the expected 11-byte synthetic file. Repeat and button regression checks are pending.
+- **Firmware layout committed.** The Arduino sketch remains at firmware/TraceDeck/TraceDeck.ino. Shared input and UI code live under src/input/ and src/ui/. BadUSB code lives under src/badusb/ with Drop & Upload in its own payload folder. The reorganization built in both variants at 024c89d.
+- **Payload menu in review.** The working tree adds Home → BadUSB payload menu → Drop & Upload. It includes two disabled slots. Both firmware variants built and simulated navigation and arming checks passed. Physical OLED and PC2 checks are pending.
+- **Next.** Finish reviewing the menu, then work on the 60-second gauge, Passive and Active modes, and the Ops Console redesign. The current firmware uses manual ARM → INJECT and a 10-second arming window.
 
-## Assignment baseline
+Setup, toolchain versions, and detailed test steps are in [README.md](README.md).
 
-Source: ICT1011 Project Briefing (AY26), pages 2-8. This summary is self-contained; check subsequent instructor announcements for changes.
+## System layout
+
+| Component | Responsibility |
+| --- | --- |
+| USB TinyScreen+ and PC2 | On an owned, unlocked Windows lab PC, the Drop & Upload payload creates the fixed synthetic file in Notepad and uses the default browser to submit it to PC1. The local build address enables upload. The default build exercises the local save. |
+| PC1 TraceHub | One Flask codebase and one local SQLite database. The loopback Ops Console refreshes the latest 50 receipts. The isolated-LAN browser listener accepts the fixed demo file. A separate authenticated HTTPS profile serves text-file clients. |
+| Wi-Fi TinyScreen+ | Planned second node using the borrowed ASD2123-R Wi-Fi TinyShield. Send a bounded request directly to a mock IoT device on PC1 and show the matching result or timeout on the OLED. |
+
+Use owned equipment, synthetic data, and an isolated lab network. Keep the fixed browser upload listener on the demo LAN. Keep credentials, database files, and machine-specific settings local.
+
+TraceHub stores the decoded text, filename, size, server-assigned loot ID, observed peer IP, and UTC receipt time. An identical retry of the same browser form preserves its loot ID. The OLED reports keys sent. A stored TraceHub record confirms receipt.
+
+## Requirements and evidence
+
+| ID | Requirement | Current evidence and remaining check |
+| --- | --- | --- |
+| H01 | Require physical arming before either USB trigger. Consume the arm once. Cancel and expiry disarm the board. | **V01 partial.** One deliberate integrated run passed. Verify repeat, unarmed, cancelled, expired and held-INJECT cases on the current build. Validate Active separately before using it live. |
+| H02 | Have the Wi-Fi node send one direct lab request and display its result or timeout. | **V02 planned.** Verify with the shield, the actual lab network and PC1 service, then stop the service and check the timeout. |
+| H03 | Accept the fixed USB demo file and independently record the mock IoT request and outcome. | **V03 partial.** Browser upload and retry validation passed in Flask checks. The mock IoT endpoint and the combined live evidence check are pending. |
+| H04 | Present real evidence with its source, identifier and server timestamp. | **V03 partial.** The browser receipt is visible in the console. Check the refreshed console, fresh IDs for separate attempts, and actual results from both paths. |
+| H05 | Repeat both paths on the assessment setup and recover saved evidence after restarting TraceHub. | **V04 planned.** Have a second teammate follow the setup, repeat both paths, and verify that prior evidence is still visible after restart. |
+
+Track build, simulation and physical results separately. Record the revision, tester, date and outcome for each physical check.
+
+## Active work
+
+| Work | Status | Exit check |
+| --- | --- | --- |
+| BadUSB payload menu | Review | On the OLED, open and back out of Drop & Upload, verify the disabled slots and held-button transitions, and run the configured demo once. |
+| 60-second arming gauge | Planned | Show the exact seconds and ten slanted segments at six seconds each. Verify the start, final second, cancel and expiry on the OLED. |
+| Passive and Active triggers | Planned | Open the payload in Passive and Disarmed. Passive requires ARM then INJECT. Active requires ARM and one verified fresh USB connection. First prove connection detection on the battery-powered board with a status-only check. Test existing connections, reconnects, cancellation and expiry before enabling automatic output. |
+| Ops Console redesign | Planned | Make the latest receipt, source IP, time and content preview easy to scan in the dark terminal layout. Verify live updates and access to full file metadata. |
+| Wi-Fi path and combined rehearsal | Planned after the BadUSB blocks | Implement the PC1 mock IoT endpoint and the direct board request. Rehearse both paths using the same setup for the video and live demo. |
+| E04 hostname attribution | Deferred | Resolve browser source IPs through reverse DNS or a time-valid, operator-verified mapping. Preserve the original IP and receipt time. Keep these names and their provenance separate from client-reported hostnames already stored by the authenticated HTTPS receiver. Allow unknown names and test two known devices plus an unresolved device. |
+
+Confirm team ownership and internal dates before the combined rehearsal. Record each member's actual contribution and the sources they used.
+
+## Team workflow
+
+- Use short descriptive branch names such as feat/badusb-payload-menu. Keep related edits together and review the diff and checks before committing.
+- Keep main usable and review changes before merging. Use teammate review when team development resumes. Record setup changes and results in the README and progress in this plan.
+- Keep local runtime data and credentials out of the repository. Preserve upstream licenses and attribute adapted work in source and video.
+
+## Assessment and delivery
+
+The assessment requirements come from ICT1011 Project Briefing (AY26), pages 2–8, and Assessment Rubrics, page 1. The four rubric categories are creativity, technical work, YouTube video, and demonstration. Each is worth five points. Individual marks also depend on peer assessment.
 
 | ID | Requirement | Acceptance evidence |
 | --- | --- | --- |
@@ -24,160 +69,4 @@ Source: ICT1011 Project Briefing (AY26), pages 2-8. This summary is self-contain
 | A05 | Submit by 25 Nov 2026, 23:59 (Singapore time) | Submission confirmation |
 | A06 | Demonstrate on 26 Nov 2026, Week 13, with behavior matching the video; all members attend as required | Rehearsal and live demonstration |
 
-The rubric gives 5 points each to creativity, technical work, YouTube video, and demonstration. Individual marks also depend on peer assessment. Record real contributions and reviews throughout the project. (Assessment Rubrics, p. 1. Project Briefing, p. 4.)
-
-It specifies six-member proposed teams and permits an instructor-added member. Record the confirmed seven-person roster rather than inferring a new allocation.
-
-## Product scope
-
-**TraceDeck** lets students trace evidence from controlled USB and Wi-Fi interactions. In the USB base, a physically armed TinyScreen+ opens Windows Run on PC2, launches Notepad, types `hello world`, and saves `hello-world.txt` to the designated lab folder. The board then opens TraceHub's upload page in the existing browser and selects the saved file. The browser sends it to PC1 over the isolated LAN. The Ops Console shows the decoded text and loot metadata. In the later network path, a second TinyScreen+ sends a request over local Wi-Fi to the mock IoT service and displays the service result.
-
-### Core requirements for team review
-
-| ID | Requirement | Acceptance evidence |
-| --- | --- | --- |
-| H01 | The USB node starts unarmed and emits one fixed lab interaction only after explicit physical arming and execution. It returns to a safe state on completion, cancellation, or arming timeout. | The expected Notepad file is saved on the tested PC2 laptop. Unarmed, cancelled-before-execution, and expired attempts emit no keystrokes. |
-| H02 | The network node sends a bounded request directly to the owned decoy and displays the actual matching result or a timeout/unknown state. | A live request and response agree with the service log and the OLED. With the service unavailable, the OLED reports the failure to confirm the result. |
-| H03 | TraceHub accepts the fixed USB demo file through the PC2 browser while the demo listener is running. The mock IoT service simulates one device with dummy data and independently records Wi-Fi requests and outcomes. | Each deliberate USB trigger produces one loot entry with a source and timestamp. A direct Wi-Fi request produces the expected service result. |
-| H04 | The dashboard shows saved evidence with its ID, source, and server timestamp. Board status distinguishes keys sent from a matching service response. | The manual control and repeated USB and Wi-Fi interactions produce distinct evidence. Retried submissions preserve their original loot IDs. |
-| H05 | The team can repeat both paths on the assessment setup and recover the evidence after a server restart. | A second teammate follows setup, completes both paths, and verifies that the dashboard shows each new result and retains previous records. |
-
-The core is one decoy, one fixed USB scenario, and one direct Wi-Fi scenario. Use team-owned equipment, an isolated local network, and synthetic data. The browser demo uses cleartext HTTP for its fixed file and sends no credential. TraceHub records the peer IP observed by PC1. HTTP logs show service interactions and the honeypot records them. The project scope excludes general payload scripting, shell commands, external targets, broad scanning, public honeypot hosting, real credential collection, and locked-session or privilege bypass.
-
-### Possible extensions if time allows
-
-Keep the core release runnable independently. Consider extensions only after M3, with both paths rehearsed and sufficient time reserved for verification, video, and submission. Include an extension in the video and live demo only when its acceptance checks pass.
-
-- **E01 — AuthenticConfig.** The laptop issues a bounded, authenticated application profile. One TinyScreen+ validates the schema and parameter bounds, checks the HMAC, and applies a newer valid profile with a visible effect such as a changed label or request interval. Altered, out-of-bounds, or replayed profiles must leave the active profile unchanged. A borrowed ASD2202-R-E EEPROM is a candidate for retaining the accepted profile and version after a normal restart. Verify retention and rollback rejection after restart before claiming persistence. Invalid stored state must produce an explicit recovery condition. If storage is unavailable, demonstrate session-only version checking. [TinyCircuits EEPROM guide](https://learn.tinycircuits.com/Memory/EEPROM_TinyShield_Tutorial/).
-- **E02 — Expanded honeypot + Rubber Ducky-style USB + IoT toolkit.** Reuse the core nodes, decoy, and event timeline. Add selectable, predefined lab scenarios with bounded USB actions and direct board-originated IoT checks. Start with one additional scenario, such as comparing how the same mock IoT control request is handled under permissive and guarded policies. The operator selects the preset, runs the relevant USB or Wi-Fi interaction, and sees the actual response and correlated evidence. Verify that the selected preset executes, both policy outcomes are observable, and the core scenario still runs after reset. Pick the final added scenario during extension review.
-- **E03 — Browser-trusted HTTPS for BadUSB.** Use a hostname the team controls and resolve it to PC1's private address on the demo network. Obtain a publicly trusted certificate with DNS-01 validation so the upload service can stay reachable only on the LAN. Verify that the stock PC2 browser opens the page and uploads the demo file without a certificate warning or a custom trust installation. [Let's Encrypt DNS-01 validation](https://letsencrypt.org/docs/challenge-types/#dns-01-challenge).
-- **E04 — Hostname attribution for loot.** Look up the observed source IP on the isolated demo network using reverse DNS or an operator-verified DHCP mapping. Store the hostname and how it was obtained alongside the original IP and receipt time. Use a nullable hostname field with `NULL` for an unknown or unverified name. When labeling older loot, use an address assignment valid at the original receipt time. Verify that two known devices resolve to their own names and that loot from an unresolved device still saves. The separate authenticated HTTPS receiver already saves a client-reported hostname with the enrolled helper ID. When planning hostname attribution, keep that reported value and its provenance distinct from names resolved or verified for browser uploads. [Microsoft reverse DNS documentation](https://learn.microsoft.com/en-us/windows-server/networking/dns/reverse-lookup).
-
-## Architecture decisions
-
-Working conventions and proposed TraceDeck architecture. Team review is pending.
-
-| ID | Decision | Reason / revisit condition |
-| --- | --- | --- |
-| D01 | One repository for the complete system | Keep firmware, wiring, tests, and delivery information consistent at a revision |
-| D02 | README.md plus PROJECT_PLAN.md | Separate project use from implementation coordination without extra planning files |
-| D03 | Add firmware/, hardware/, tests/, and docs/ when content exists | Avoid empty scaffolding |
-| D04 | Separate firmware entry point, application logic, and hardware access | Support focused changes and testing with ordinary modules |
-| D05 | Verify the actual kit using its vendor-supported workflow before selecting the toolchain | Demonstrate board/library compatibility first |
-| D06 | Short-lived task branches and reviewed pull requests into main | Integrate small changes and preserve review history |
-| D07 | Track tasks here initially | Reconsider GitHub Issues only if this table becomes unwieldy |
-| D08 | PC1 runs TraceHub. The USB node drives PC2's existing apps and browser through USB HID. The later Wi-Fi path uses a second TinyScreen+. | Use an unlocked laptop on the demo network without installing a helper. |
-| D09 | Collect loot continuously and identify each saved entry by its server-assigned ID. | A submission ID identifies a retry of the same browser form. The authenticated API scopes its submission IDs to each enrolled helper. |
-| D10 | Use one PC1 Flask codebase in `tracehub/` with SQLite and separate dashboard, fixed-file demo, and authenticated API profiles. | Keep the dashboard local to PC1, scope cleartext traffic to the synthetic demo, and require HTTPS for credentialed uploads. |
-
-The integrated lab uses two ASM2022 TinyScreen+ boards, one borrowed ASD2123-R Wi-Fi TinyShield on the network node, PC1 and PC2, working USB data/power connections, and a reachable private 2.4 GHz network. The other kits are available for development. Leave the ST BLE shield off the Wi-Fi stack. Confirm the USB layout, Wi-Fi reachability, power, and venue setup early. Arduino Keyboard and WiFi101 are documented starting points. Record the exact versions after testing the actual hardware. [TinyScreen+ SAMD package](https://files.tinycircuits.com/ArduinoBoards/tinycircuits-samd-1.1.0.zip), [Arduino Keyboard](https://docs.arduino.cc/language-reference/en/functions/usb/Keyboard/), [TinyCircuits Wi-Fi guide](https://learn.tinycircuits.com/Communication/WiFi_TinyShield_Tutorial/).
-
-Each new browser form gets a submission ID that it sends with the file. TraceHub saves each new loot entry with a unique loot ID, decoded text, filename, original byte count, the peer IP observed by PC1, and the UTC receipt time. The Ops Console uses the IP and time to distinguish browser sources in the base. Hostname lookup is optional under E04. Future Wi-Fi results retain their own evidence fields. C2 tasking follows the core lab.
-
-Keep initialization and the execution loop small. Put rules, calculations, and state transitions in application modules; isolate vendor-library calls in hardware modules where practical. Prefer responsive timed updates when behavior requires them. Add classes, scheduling, or other layers only when justified.
-
-Record toolchain, board-package, and dependency versions in shared configuration or setup instructions. Keep machine-specific ports and absolute paths out of shared build configuration. Preserve upstream licenses and record reused sources and modifications.
-
-When a decision changes, retain its ID and record the date, replacement, reason, and participants in the log below.
-
-## Responsibilities
-
-Names and assignments require team agreement. Redistribute responsibilities as needed; everyone contributes technical work and reviews another person's work.
-
-| Responsibility | Owner | Backup / reviewer |
-| --- | --- | --- |
-| Board controls, OLED, and arming state machine | TBD | TBD |
-| USB keyboard sequence, cancellation, and host compatibility | TBD | TBD |
-| Wi-Fi request handling, response parsing, and OLED feedback | TBD | TBD |
-| Laptop IoT honeypot, synthetic state, and service logging | TBD | TBD |
-| BadUSB browser upload, loot schema, and evidence correlation | TBD | TBD |
-| Live dashboard and display of controls and errors | TBD | TBD |
-| System integration, reset and failure testing, and demo rehearsal | TBD | TBD |
-
-Each owner records their implementation, verification, and sources. Assign coordination, submission, and video editing alongside these technical packages.
-
-## Milestones
-
-Internal dates require agreement; assignment deadlines are recorded above.
-
-| ID | Milestone | Exit condition | Owner | Target | Status |
-| --- | --- | --- | --- | --- | --- |
-| M0 | Foundation | Record inventory, collaboration workflow, and a successful baseline build/upload | TBD | TBD | In progress |
-| M1 | TraceDeck scope review | Record the team selection and review H01–H05, interfaces, owners, and internal dates | TBD | TBD | Review |
-| M2 | Hardware feasibility | Demonstrate one harmless USB marker and a separate board-to-service Wi-Fi round trip on the actual hardware | TBD | TBD | Todo |
-| M3 | Core integration | Show USB loot and Wi-Fi decoy results in the live console, demonstrate board feedback, and repeat both paths. Review whether time remains for an extension. | TBD | TBD | Todo |
-| M4 | Verified release | Pass the core checks and any checks for included extensions. A second teammate reproduces the demo setup. | TBD | TBD | Todo |
-| M5 | Submission ready | Check the video, attribution, source archive, and live rehearsal against A01–A06 | TBD | Before 25 Nov deadline | Todo |
-
-## Task tracker
-
-Statuses: Todo, In progress, Blocked, Review, Done. Give each task one accountable owner, a reviewer, due date, and completion condition before implementation.
-
-| ID | Task / completion condition | Owner / reviewer | Due | Dependencies | Status | Evidence / PR |
-| --- | --- | --- | --- | --- | --- | --- |
-| T01 | Review foundation and record agreement | TBD / TBD | TBD | - | Review | Initial documents prepared |
-| T02 | Confirm board revisions, Wi-Fi loan access, data cables, and the test network | TBD / TBD | TBD | - | In progress | Kit models and one Wi-Fi loan reported |
-| T03 | Verify vendor example build/upload; record exact versions and setup | TBD / TBD | TBD | T02 | Done | Flash verified and OLED loop observed by Arvin on Windows, 8 Nov 2026. See [README.md](README.md). |
-| T04 | Configure GitHub collaboration; demonstrate a reviewed PR | TBD / TBD | TBD | T01 | Todo | - |
-| T05 | Agree roster, responsibilities, and internal milestone dates | TBD / TBD | TBD | T01 | Todo | - |
-| T06 | Record TraceDeck selection and review H01–H05 and the loot interface | TBD / TBD | TBD | T05 | Review | Team selected TraceDeck |
-| T07 | Verify arming, cancellation, and timeout, then test the fixed marker over USB HID (H01) | TBD / TBD | TBD | T03, T06 | Done | SAFE startup, button mapping, state transitions, and the one-marker Notepad test verified by Arvin on Windows, 8 Nov 2026. See [README.md](README.md). |
-| T08 | Verify direct Wi-Fi reachability, then implement the request and feedback path (H02) | TBD / TBD | TBD | T03, T06 | Todo | - |
-| T09 | Implement the BadUSB browser upload, mock IoT decoy, and independent event records (H03) | TBD / TBD | TBD | T06 | In progress | PC1 browser upload ready for code review. |
-| T10 | Integrate both nodes and build the live correlation dashboard (H04) | TBD / TBD | TBD | T07, T08, T09 | Todo | - |
-| T11 | Verify the core, review the extension decision at M3, and rehearse the release (H05) | TBD / TBD | TBD | T10 | Todo | - |
-| T12 | Record the working demo and package, extract, and check the submission (A01–A06) | TBD / TBD | TBD | T11 | Todo | - |
-
-## Team workflow and completion rules
-
-- Keep main usable. Use a task branch such as feat/<task-id>-<description>, fix/<task-id>-<description>, or docs/<task-id>-<description>.
-- Make focused commits with descriptive messages. Describe problem, change, task ID, and validation in each pull request.
-- Obtain at least one teammate's approval before merging. Configure branch protection and checks where available; this document does not enable them.
-- Follow the chosen toolchain's naming conventions and shared editor settings. Coordinate edits to design files that cannot merge cleanly.
-- Integrate regularly. Update this plan alongside changes to scope, status, or decisions.
-- Keep required source, assets, configuration, and test evidence shared. Exclude generated caches, machine-specific settings, and credentials.
-- Record actual contribution and review evidence; commit counts alone do not measure contribution.
-
-A task is Done when its acceptance criteria pass, relevant checks and limitations are recorded, affected documentation is updated, and a teammate has reviewed the result (and it is merged where applicable).
-
-During solo USB feasibility work, Arvin can close tasks after passing the checks and recording the results in the affected documentation. Teammate review applies when team development resumes.
-
-## Verification
-
-Use automated tests for independent logic, integration checks for connected modules, and physical acceptance checks for device behavior. Add automatic compilation once the board/toolchain is established. A successful build or simulation does not prove physical correctness.
-
-| Test ID | Requirement ID | Procedure / hardware | Expected result | Actual result | Revision / tester / date |
-| --- | --- | --- | --- | --- | --- |
-| V01 | H01 | With the PC1 demo listener running and the laptop unlocked on the isolated network, try unarmed, deliberate, cancelled, expired, and held-INJECT board attempts | A deliberate injection visibly saves the expected Notepad file and produces one matching loot entry on PC1. Holding INJECT produces one entry. Unarmed, cancelled, and expired attempts produce no new loot. | One deliberate injection saved the file and produced one PC1 loot entry. Repeat and button regression checks are pending. | Arvin, 10 Nov 2026 |
-| V02 | H02 | Send a request over the owned network, then repeat with the decoy stopped | Matching live result when reachable and timeout/unknown when unavailable | Not run | - |
-| V03 | H03, H04 | Run USB, Wi-Fi, and manual controls. Retry the same browser submission and attempt to upload a file with a wrong name or contents. | The console shows the recorded sources and times. Retrying returns the original loot ID. The wrong file creates no entry. | Not run | - |
-| V04 | H05 | A second teammate sets up the system, runs both paths, restarts TraceHub, and repeats | Prior evidence stays available and new interactions produce distinct records. | Not run | - |
-
-For the 2–3 minute video and live demo, show the physical USB trigger, the resulting app and honeypot evidence, then the direct Wi-Fi interaction and its OLED result. Include a brief manual control, show each member's contribution in the video, and cite sources. Generate fresh records in the live assessment and use the same tested configuration as the video.
-
-Before submission, test an extracted archive on a clean setup. Check it contains everything needed to reproduce the demonstrated application; record the tested revision/tag and actual submission confirmation.
-
-## Risks and open questions
-
-| Item | Next action | Owner | Status |
-| --- | --- | --- | --- |
-| USB enumeration, focus, layout, or timing | Test one fixed host setup first. If HID remains unreliable, review a reduced direct Wi-Fi and honeypot demo with the team. | TBD | Open |
-| Wi-Fi shield access or local client isolation | Test the actual loaned shield and private network early. If reachability remains unreliable, review a reduced USB and local decoy demo with the team. | TBD | Open |
-| Missing or misleading event correlation | Use separate app and server records and test missing/stale data before claiming a service result. | TBD | Open |
-| Toolchain compatibility and integration time | Record the vendor baseline and schedule short integration sessions using the one Wi-Fi shield. | TBD | Open |
-| Optional work disrupts the core or storage is unavailable | Preserve a runnable core revision. Timebox extensions after M3 and defer work that cannot be verified before recording. | TBD | Open |
-| Later course announcements | Confirm current instructions before submission | TBD | Open |
-
-## Decision and progress log
-
-| Date | Record | Evidence / participants |
-| --- | --- | --- |
-| 2026-10-29 | Foundation prepared; brainstorming and implementation remain open | Owner's requested structure; team review pending |
-| 2026-11-08 | Team selected TraceDeck as the primary project. AuthenticConfig and the expanded honeypot + Rubber Ducky-style USB + IoT toolkit are possible extensions. | Team decision reported by Arvin, who confirmed the TraceDeck name. Core acceptance criteria, owners, and internal dates are pending team review. |
-| 2026-11-10 | D08 records the two-PC USB base approved by Arvin on 9 Nov. D09 replaces the proposed run IDs and manual run controls with continuous loot collection. D10 records the TraceHub architecture. | Arvin approved implementation. Team review of the integrated design is pending. |
-| 2026-11-10 | Arvin approved the visible Notepad sequence and HTTPS text-file upload. PC1 stores decoded text and metadata as loot. | The PC hosts TraceHub and the laptop is the target. Physical verification follows sender and firmware setup. |
-| 2026-11-10 | Arvin approved the browser-driven USB demo on the isolated LAN. D08 now uses the stock PC2 browser, D09 covers browser retries, and D10 separates the HTTP demo from the authenticated HTTPS API. Browser-trusted HTTPS is E03. | The PC1 block is ready for review. Firmware and physical verification are pending. |
-| 2026-11-10 | Arvin selected the observed IP as the source identifier for the browser demo. Hostname lookup and nullable hostname storage are optional under E04. | The unique loot ID and UTC receipt time are already stored. Firmware and physical verification are pending. |
-| 2026-11-10 | The firmware adds the BadUSB menu and the fixed Notepad save sequence behind physical ARM and INJECT. The initial destination is `%TEMP%\hello-world.txt`. | TinyScreen+ build and flash checksum passed. Arvin confirmed the file saved on PC2. Browser automation is the next firmware block. |
-| 2026-11-10 | The same BadUSB injection now opens TraceHub in the default browser and selects the demo file. The upload page submits a matching selection. The PC1 address is supplied at build time. | Build, flash checksum, and loopback browser upload passed. End-to-end verification on the demo LAN is pending. |
-| 2026-11-10 | Arvin observed the browser opening before the Notepad save finished on PC2. The firmware waits 2.5 seconds after Save and 1.75 seconds at dialog transitions. | Flash verification passed. Arvin reported a successful PC2 test, and PC1 stored one browser-demo row with the expected 11-byte file. |
+Show a fresh USB receipt and the tested Wi-Fi response in the video and live demo. Verify the extracted submission ZIP on a clean setup, and confirm the demo slot and any later course announcements before submitting.

@@ -59,11 +59,15 @@ void sendNotepadSaveKeys() {
 }
 }
 
+bool dropUploadHasTraceHubUrl() {
+    return kTraceHubUploadUrl[0] != '\0';
+}
+
 void sendBadUsbDemoKeys() {
     Keyboard.begin(KeyboardLayout_en_US);
     sendNotepadSaveKeys();
 
-    if (kTraceHubUploadUrl[0] == '\0') {
+    if (!dropUploadHasTraceHubUrl()) {
         return;
     }
 
