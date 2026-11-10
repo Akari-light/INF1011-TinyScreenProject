@@ -12,14 +12,29 @@
         <p>Saved loot <code>{{ loot_id }}</code>.</p>
         <p><a href="{{ url_for('badusb_upload.show_badusb_upload') }}">Open a new upload form</a></p>
         {% else %}
-        <p>Upload <code>hello-world.txt</code> containing <code>hello world</code>.</p>
+        <p>Select <code>hello-world.txt</code> containing <code>hello world</code> to upload it.</p>
         <form method="post" enctype="multipart/form-data"
               action="{{ url_for('badusb_upload.receive_badusb_upload') }}">
             <input type="hidden" name="submission_id" value="{{ submission_id }}">
             <label for="demo-file">Demo file</label>
-            <input id="demo-file" type="file" name="file" accept=".txt" required>
+            <input id="demo-file" type="file" name="file" accept=".txt" autofocus required>
             <button type="submit">Upload demo file</button>
         </form>
+        <script>
+            const demoFileInput = document.getElementById("demo-file");
+            demoFileInput.addEventListener("change", async () => {
+                const selectedFile = demoFileInput.files[0];
+                if (selectedFile?.name !== "hello-world.txt" || selectedFile.size > 16) {
+                    return;
+                }
+
+                const fileText = await selectedFile.text();
+                if (demoFileInput.files[0] === selectedFile &&
+                    ["hello world", "hello world\n", "hello world\r\n"].includes(fileText)) {
+                    demoFileInput.form.requestSubmit();
+                }
+            });
+        </script>
         {% endif %}
     </main>
 </body>

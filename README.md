@@ -32,6 +32,8 @@ $traceDeckPython = Join-Path $traceDeckEnvironment 'Scripts\python.exe'
 
 Open `http://127.0.0.1:5000` on PC1. The dashboard checks for new loot every two seconds and shows the newest 50 entries. SQLite retains the saved loot across restarts in `%LOCALAPPDATA%\TraceDeck\tracehub.sqlite3`.
 
+To start with an empty Ops Console, stop both TraceHub processes on PC1 and rename `tracehub.sqlite3` to a backup. Starting TraceHub again creates an empty database.
+
 ### Start the BadUSB demo upload on PC1
 
 In a second PowerShell window in the project root, run `ipconfig` and find PC1's private IPv4 address on the isolated demo network. Use that address to bind the upload listener to the demo interface.
@@ -42,7 +44,7 @@ $pc1Ip = Read-Host 'PC1 private demo-network IPv4 address'
 & $traceDeckPython -m flask --app "tracehub:create_app('badusb_demo')" --no-debug run --host $pc1Ip --port 8080
 ```
 
-The PC2 browser opens `http://<PC1-private-IP>:8080/badusb/upload`. The page accepts one UTF-8 `hello-world.txt` containing only `hello world`, with or without a final line break. This is a cleartext HTTP profile for the fixed synthetic file. If Windows Firewall needs a rule, scope it to the isolated demo network.
+The PC2 browser opens `http://<PC1-private-IP>:8080/badusb/upload`. The page focuses the file picker and automatically submits a UTF-8 `hello-world.txt` containing only `hello world`, with or without a final line break. This is a cleartext HTTP profile for the fixed synthetic file. If Windows Firewall needs a rule, scope it to the isolated demo network.
 
 After saving the decoded text and metadata, TraceHub shows the loot ID on the upload page and in the Ops Console. Browser submissions show the peer IP PC1 observed. Retrying the same form with the same file returns the same loot ID. Open a fresh form for a new attempt. Stop the demo listener with Ctrl+C when finished.
 
@@ -123,6 +125,13 @@ arduino-cli compile --fqbn TinyCircuits:samd:tinyscreen .\firmware\TraceDeck
 arduino-cli compile --fqbn TinyCircuits:samd:tinyscreen --port $port --upload .\firmware\TraceDeck
 ```
 
+Those commands build the Notepad-only sequence. To include the browser upload, use the same private IPv4 address as the PC1 demo listener on port 8080. Enter the address at build time so it stays in the local firmware image and out of shared source. Keep the configured firmware image local.
+
+```powershell
+$pc1Ip = Read-Host 'PC1 private demo-network IPv4 address'
+arduino-cli compile --fqbn TinyCircuits:samd:tinyscreen --build-property "compiler.cpp.extra_flags=-DTRACEHUB_PC1_IP=$pc1Ip" --port $port --upload .\firmware\TraceDeck
+```
+
 1. Power the board on and confirm Home highlights `BadUSB`. Tap L1 (`OPEN`) and confirm the OLED reads `BadUSB`, `SAFE`, and `Ready`.
 2. Tap and release L2 (`ARM`). Confirm `ARMED` appears.
 3. Within 10 seconds, tap R2 (`CANCEL`). Confirm `SAFE` and `Cancelled` appear.
@@ -153,7 +162,7 @@ On 8 Nov 2026, Arvin checked the icons and countdown on the TinyScreen+ and conf
 
 ### Check the BadUSB Notepad save
 
-With the owned PC2 laptop unlocked, use the English (US) keyboard layout with Caps Lock off. This block sends a fixed Notepad sequence. It opens Windows Run, starts Notepad, opens a blank document, types `hello world`, and sends Save As keystrokes for `%TEMP%\hello-world.txt`. The OLED shows `KEYS SENT` after issuing the sequence. Check the file on PC2 to confirm the save. [Arduino Keyboard library](https://github.com/arduino-libraries/Keyboard/tree/1.0.7)
+With the owned PC2 laptop unlocked, use the English (US) keyboard layout with Caps Lock off. The board opens Windows Run, starts Notepad, opens a blank document, types `hello world`, and sends Save As keystrokes for `%TEMP%\hello-world.txt`. The OLED shows `KEYS SENT` after issuing the sequence. Check the file on PC2 to confirm the save. [Arduino Keyboard library](https://github.com/arduino-libraries/Keyboard/tree/1.0.7)
 
 1. In `SAFE`, tap R1. Expect PC2 to stay on its current screen.
 2. Arm with L2, cancel with R2, then tap R1. Expect the same result. Repeat after letting the arming window expire.
@@ -182,6 +191,12 @@ Use the chosen toolchain's native layout inside `firmware/`.
 
 The project plan lists the acceptance checks. Record build results separately from physical USB and Wi-Fi test results.
 
-When the BadUSB firmware is ready, verify the file path on the actual lab devices. Use the PC as PC1 and the laptop as PC2. One physical injection should type `hello world` in Notepad, save `hello-world.txt` on the laptop, and submit it through the browser. Compare the loot ID on the upload page to the PC1 console entry and check its filename, upload size, and decoded text.
+For the integrated BadUSB check, start the Ops Console and demo listener on PC1, then connect the configured board to the unlocked PC2 laptop on the isolated demo network. Move aside any existing `%TEMP%\hello-world.txt` before each fresh attempt so the save creates a new file. A deliberate injection should create the file, open the upload page in the default browser, and select the file. The page submits the selection automatically. Compare the loot ID shown on PC2 to the single new entry in the PC1 console and check its source IP, filename, upload size, and decoded text. Repeat with a fresh file. Check that an unarmed, cancelled, or expired attempt creates no entry and that holding INJECT produces only one.
+
+The firmware waits 2.5 seconds after sending Save before opening the browser. It also waits 2.5 seconds for Notepad and the browser to open and 1.75 seconds at dialog transitions. If Windows displays a replacement prompt, move the existing demo file aside before retrying. That prompt requires a separate action to complete the save.
+
+On 10 Nov 2026, the configured TinyScreen+ build with the revised waits used 31,356 bytes and passed flash verification. In a separate loopback Chrome check, Enter opened the focused file picker. Selecting the expected file saved one loot entry with the same ID on the upload page and dashboard. Selecting a file with different contents left the form open.
+
+Arvin reported a successful deliberate PC2 injection on 10 Nov 2026. The PC1 database contained one browser-demo entry for `hello-world.txt` with 11 bytes, decoded text `hello world`, and a non-loopback source IP. The repeat and unarmed, cancelled, expired, and held-INJECT cases are pending for the integrated build.
 
 Preserve upstream license notices. Attribute reused or adapted code in the relevant source files and delivery material. Record source URLs, versions or revisions, and modifications. A project-wide license is pending.

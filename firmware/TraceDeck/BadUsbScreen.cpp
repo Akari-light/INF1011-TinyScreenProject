@@ -36,7 +36,7 @@ bool BadUsbScreen::update(uint8_t pressed, uint32_t now) {
         if (USBDevice.configured()) {
             clearStatusArea();
             TerminalTheme::drawText(display_, 20, 26, TerminalTheme::kAmber, "Sending keys");
-            sendNotepadSaveKeys();
+            sendBadUsbDemoKeys();
             drawState(USBDevice.configured() ? "KEYS SENT" : "USB unavailable");
         } else {
             drawState("USB unavailable");

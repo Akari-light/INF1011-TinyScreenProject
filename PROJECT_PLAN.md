@@ -9,7 +9,7 @@ The team's central implementation plan. Keep requirements, tasks, responsibiliti
 - The team selected **TraceDeck**, a pocket attack-and-deception lab. The vendor OLED baseline and the USB keyboard test in Windows Notepad passed. Arvin is developing TraceDeck solo for now.
 - **Optional if time allows:** AuthenticConfig, the expanded honeypot + Rubber Ducky-style USB + IoT toolkit, browser-trusted HTTPS, and hostname attribution for BadUSB loot.
 - Seven members have TinyScreen+ kits and laptops. One Wi-Fi TinyShield is already on loan. Owners and internal dates are pending. The verified USB baseline toolchain versions are in [README.md](README.md).
-- The PC1 browser upload page is implemented. Arvin confirmed the TinyScreen+ saved `%TEMP%\hello-world.txt` on PC2. Browser upload keystrokes and the integrated LAN check follow. Direct Wi-Fi and the mock IoT service follow later.
+- Arvin confirmed a deliberate BadUSB injection on PC2 completed the Notepad save and browser upload to PC1. The repeat and button regression checks are pending. Direct Wi-Fi and the mock IoT service follow later.
 
 ## Assignment baseline
 
@@ -148,7 +148,7 @@ Use automated tests for independent logic, integration checks for connected modu
 
 | Test ID | Requirement ID | Procedure / hardware | Expected result | Actual result | Revision / tester / date |
 | --- | --- | --- | --- | --- | --- |
-| V01 | H01 | With the PC1 demo listener running and the laptop unlocked on the isolated network, try unarmed, deliberate, cancelled, expired, and held-INJECT board attempts | A deliberate injection visibly saves the expected Notepad file and produces one matching loot entry on PC1. Holding INJECT produces one entry. Unarmed, cancelled, and expired attempts produce no new loot. | File save confirmed on PC2. Remaining checks pending. | Arvin, 10 Nov 2026 |
+| V01 | H01 | With the PC1 demo listener running and the laptop unlocked on the isolated network, try unarmed, deliberate, cancelled, expired, and held-INJECT board attempts | A deliberate injection visibly saves the expected Notepad file and produces one matching loot entry on PC1. Holding INJECT produces one entry. Unarmed, cancelled, and expired attempts produce no new loot. | One deliberate injection saved the file and produced one PC1 loot entry. Repeat and button regression checks are pending. | Arvin, 10 Nov 2026 |
 | V02 | H02 | Send a request over the owned network, then repeat with the decoy stopped | Matching live result when reachable and timeout/unknown when unavailable | Not run | - |
 | V03 | H03, H04 | Run USB, Wi-Fi, and manual controls. Retry the same browser submission and attempt to upload a file with a wrong name or contents. | The console shows the recorded sources and times. Retrying returns the original loot ID. The wrong file creates no entry. | Not run | - |
 | V04 | H05 | A second teammate sets up the system, runs both paths, restarts TraceHub, and repeats | Prior evidence stays available and new interactions produce distinct records. | Not run | - |
@@ -179,3 +179,5 @@ Before submission, test an extracted archive on a clean setup. Check it contains
 | 2026-11-10 | Arvin approved the browser-driven USB demo on the isolated LAN. D08 now uses the stock PC2 browser, D09 covers browser retries, and D10 separates the HTTP demo from the authenticated HTTPS API. Browser-trusted HTTPS is E03. | The PC1 block is ready for review. Firmware and physical verification are pending. |
 | 2026-11-10 | Arvin selected the observed IP as the source identifier for the browser demo. Hostname lookup and nullable hostname storage are optional under E04. | The unique loot ID and UTC receipt time are already stored. Firmware and physical verification are pending. |
 | 2026-11-10 | The firmware adds the BadUSB menu and the fixed Notepad save sequence behind physical ARM and INJECT. The initial destination is `%TEMP%\hello-world.txt`. | TinyScreen+ build and flash checksum passed. Arvin confirmed the file saved on PC2. Browser automation is the next firmware block. |
+| 2026-11-10 | The same BadUSB injection now opens TraceHub in the default browser and selects the demo file. The upload page submits a matching selection. The PC1 address is supplied at build time. | Build, flash checksum, and loopback browser upload passed. End-to-end verification on the demo LAN is pending. |
+| 2026-11-10 | Arvin observed the browser opening before the Notepad save finished on PC2. The firmware waits 2.5 seconds after Save and 1.75 seconds at dialog transitions. | Flash verification passed. Arvin reported a successful PC2 test, and PC1 stored one browser-demo row with the expected 11-byte file. |
