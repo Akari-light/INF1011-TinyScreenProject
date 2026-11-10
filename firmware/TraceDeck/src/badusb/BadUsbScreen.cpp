@@ -1,7 +1,7 @@
 #include "BadUsbScreen.h"
 
-#include "BadUsbKeyboard.h"
-#include "TerminalTheme.h"
+#include "payloads/drop_upload/DropUpload.h"
+#include "../ui/TerminalTheme.h"
 
 namespace {
 constexpr uint8_t kArmButton = TSButtonLowerLeft;

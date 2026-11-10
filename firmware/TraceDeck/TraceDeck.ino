@@ -1,8 +1,8 @@
 #include <TinyScreen.h>
 
-#include "BadUsbScreen.h"
-#include "ButtonReader.h"
-#include "HomeScreen.h"
+#include "src/badusb/BadUsbScreen.h"
+#include "src/input/ButtonReader.h"
+#include "src/ui/HomeScreen.h"
 
 namespace {
 enum class Screen { Home, BadUsb };
