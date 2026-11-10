@@ -5,7 +5,7 @@
 namespace {
 constexpr uint8_t kArmButton = TSButtonLowerRight;
 constexpr uint8_t kCancelOrBackButton = TSButtonLowerLeft;
-constexpr uint8_t kInjectButton = TSButtonUpperRight;
+constexpr uint8_t kModeOrInjectButton = TSButtonUpperRight;
 constexpr uint32_t kMsPerSecond = 1000;
 constexpr uint8_t kSegmentCount = 10;
 constexpr uint8_t kSecondsPerSegment = 6;
@@ -56,20 +56,25 @@ BadUsbScreen::BadUsbScreen(TinyScreen &display) : display_(display) {}
 
 void BadUsbScreen::enter(const BadUsbPayload &payload) {
     payload_ = &payload;
+    mode_ = Mode::Passive;
     armed_ = false;
+    usbWatch_.reset(millis());
     TerminalTheme::drawFrame(display_);
-    drawState(payload_->readyMessage);
+    drawState("Standby");
 }
 
 bool BadUsbScreen::update(uint8_t pressed, uint32_t now) {
+    usbWatch_.update(now);
     const uint32_t elapsed = now - armedAt_;
     if (armed_ && elapsed >= kArmWindowMs) {
         armed_ = false;
+        usbWatch_.clear();
         drawState("Timed out");
     } else if (armed_ && pressed == kCancelOrBackButton) {
         armed_ = false;
+        usbWatch_.clear();
         drawState("Cancelled");
-    } else if (armed_ && pressed == kInjectButton) {
+    } else if (armed_ && mode_ == Mode::Passive && pressed == kModeOrInjectButton) {
         armed_ = false;
         if (USBDevice.configured()) {
             runPayload();
@@ -79,12 +84,31 @@ bool BadUsbScreen::update(uint8_t pressed, uint32_t now) {
     } else if (!armed_ && pressed == kArmButton) {
         armed_ = true;
         armedAt_ = now;
+        if (mode_ == Mode::Active) {
+            usbWatch_.start(now);
+        }
         drawState("");
         displayedSeconds_ = 0;
         drawCountdown(kArmWindowSeconds, 0);
+    } else if (!armed_ && pressed == kModeOrInjectButton) {
+        mode_ = mode_ == Mode::Passive ? Mode::Active : Mode::Passive;
+        drawState("Standby");
     } else if (!armed_ && pressed == kCancelOrBackButton) {
         return true;
     } else if (armed_) {
+        if (mode_ == Mode::Active) {
+            if (usbWatch_.result() == UsbConnectionWatch::Result::Enumerated) {
+                armed_ = false;
+                usbWatch_.clear();
+                drawState("USB seen (test)");
+                return false;
+            }
+            if (usbWatch_.result() == UsbConnectionWatch::Result::FramesOnly) {
+                usbWatch_.start(now);
+                drawWaitStatus("REPLUG USB");
+            }
+            drawAnimation(now, true);
+        }
         // Round up so 01s stays visible until the arming window expires.
         const uint8_t seconds = (kArmWindowMs - elapsed + kMsPerSecond - 1) / kMsPerSecond;
         const uint8_t breathFrame = seconds <= kSecondsPerSegment
@@ -99,9 +123,10 @@ bool BadUsbScreen::update(uint8_t pressed, uint32_t now) {
 
 void BadUsbScreen::clearStatusArea() {
     // Clear the changing areas while keeping the frame in place.
-    display_.clearWindow(4, 2, 91, 10);
+    display_.clearWindow(4, 1, 91, 12);
     display_.clearWindow(4, 16, 91, 33);
-    display_.clearWindow(4, 52, 91, 11);
+    display_.clearWindow(4, 51, 91, 12);
+    displayedAnimationFrame_ = 0xff;
 }
 
 void BadUsbScreen::drawState(const char *message) {
@@ -109,38 +134,77 @@ void BadUsbScreen::drawState(const char *message) {
 
     clearStatusArea();
 
-    drawText(display_, 4, 2, kCyan, armed_ ? "BadUSB" : payload_->label);
-    drawText(display_, 20, 16, armed_ ? kAmber : kGreen, armed_ ? "ARMED" : "SAFE",
-             liberationSansNarrow_14ptFontInfo);
+    if (!armed_) {
+        const uint16_t modeInk = mode_ == Mode::Passive ? kCyan : kAmber;
+        drawText(display_, 4, 2, kCyan, payload_->label);
+        drawModeSwitch(modeInk);
+        drawStatusIcon();
+        drawText(display_, 31, 15, modeInk, mode_ == Mode::Passive ? "PASSIVE" : "ACTIVE",
+                 liberationSansNarrow_12ptFontInfo);
+        drawText(display_, 31, 30, kMuted, "DISARMED");
+        display_.drawRect(4, 43, 3, 3, TSRectangleFilled, modeInk);
+        drawText(display_, 10, 39, kMuted, message);
+        display_.drawLine(8, 54, 4, 57, kControl);
+        display_.drawLine(4, 57, 8, 60, kControl);
+        drawText(display_, 12, 52, kControl, "BACK");
+        drawText(display_, 72, 52, kAmber, "ARM");
+        return;
+    }
 
-    if (armed_) {
-        // Warning triangle with an exclamation point.
-        display_.drawLine(11, 18, 18, 31, kAmber);
-        display_.drawLine(18, 31, 4, 31, kAmber);
-        display_.drawLine(4, 31, 11, 18, kAmber);
-        display_.drawLine(11, 22, 11, 26, kAmber);
-        display_.drawLine(11, 28, 11, 28, kAmber);
-
+    display_.drawRect(4, 55, 5, 5, TSRectangleFilled, kCancel);
+    drawText(display_, 12, 52, kCancel, "CANCEL");
+    if (mode_ == Mode::Active) {
+        drawText(display_, 4, 2, kCyan, payload_->label);
+        display_.drawRect(4, 16, 23, 18, TSRectangleNoFill, kFrame);
+        display_.drawLine(6, 24, 9, 24, kAmber);
+        display_.drawRect(9, 21, 6, 7, TSRectangleFilled, kAmber);
+        display_.drawRect(15, 22, 4, 5, TSRectangleNoFill, kAmber);
+        drawWaitStatus("WAIT USB");
+        drawAnimation(millis(), true);
+    } else {
+        drawText(display_, 4, 2, kCyan, "PASSIVE");
+        drawStatusIcon();
+        drawText(display_, 31, 16, kAmber, "ARMED", liberationSansNarrow_14ptFontInfo);
         drawText(display_, 50, 2, kGreen, "INJECT");
         display_.drawLine(88, 3, 92, 7, kGreen);
         display_.drawLine(92, 7, 88, 11, kGreen);
-        drawText(display_, 4, 52, kCancel, "CANCEL");
-        display_.drawLine(44, 54, 50, 60, kCancel);
-        display_.drawLine(50, 54, 44, 60, kCancel);
-    } else {
-        // Shield and check mark for SAFE.
-        display_.drawLine(5, 20, 17, 20, kGreen);
-        display_.drawLine(5, 20, 5, 27, kGreen);
-        display_.drawLine(17, 20, 17, 27, kGreen);
-        display_.drawLine(5, 27, 11, 32, kGreen);
-        display_.drawLine(17, 27, 11, 32, kGreen);
-        display_.drawLine(8, 25, 10, 27, kGreen);
-        display_.drawLine(10, 27, 14, 23, kGreen);
-
-        drawText(display_, 20, 36, kMuted, message);
-        drawText(display_, 4, 52, kControl, "BACK");
-        drawText(display_, 72, 52, kAmber, "ARM");
     }
+}
+
+void BadUsbScreen::drawModeSwitch(uint16_t ink) {
+    using namespace TerminalTheme;
+
+    const bool passive = mode_ == Mode::Passive;
+    drawText(display_, 76, 2, passive ? ink : kMuted, "P");
+    drawText(display_, 87, 2, passive ? kMuted : ink, "A");
+    const uint8_t x = passive ? 75 : 86;
+    display_.drawLine(x, 12, x + 8, 12, ink);
+}
+
+void BadUsbScreen::drawStatusIcon() {
+    using namespace TerminalTheme;
+
+    if (armed_) {
+        display_.drawLine(15, 17, 25, 33, kAmber);
+        display_.drawLine(25, 33, 5, 33, kAmber);
+        display_.drawLine(5, 33, 15, 17, kAmber);
+        display_.drawLine(15, 22, 15, 27, kAmber);
+        display_.drawRect(15, 29, 1, 1, TSRectangleFilled, kAmber);
+        return;
+    }
+
+    display_.drawLine(6, 17, 24, 17, kGreen);
+    display_.drawLine(6, 17, 6, 28, kGreen);
+    display_.drawLine(24, 17, 24, 28, kGreen);
+    display_.drawLine(6, 28, 15, 36, kGreen);
+    display_.drawLine(24, 28, 15, 36, kGreen);
+    display_.drawLine(10, 25, 13, 28, kGreen);
+    display_.drawLine(13, 28, 20, 21, kGreen);
+}
+
+void BadUsbScreen::drawWaitStatus(const char *message) {
+    display_.clearWindow(31, 20, 64, 10);
+    TerminalTheme::drawText(display_, 31, 20, TerminalTheme::kAmber, message);
 }
 
 void BadUsbScreen::drawCountdown(uint8_t seconds, uint8_t breathFrame) {
@@ -219,13 +283,28 @@ void BadUsbScreen::runPayload() {
     drawState(usbConfigured ? "KEYS SENT" : "USB unavailable");
 }
 
-void BadUsbScreen::drawLoadingProgress(uint8_t percent) {
-    const uint8_t active = (millis() / kSpinnerFrameMs) % kSpinnerDotCount;
+void BadUsbScreen::drawAnimation(uint32_t now, bool usbWait) {
+    const uint8_t active = (now / kSpinnerFrameMs) % kSpinnerDotCount;
+    if (active == displayedAnimationFrame_) {
+        return;
+    }
+    displayedAnimationFrame_ = active;
+    if (usbWait) {
+        for (uint8_t bar = 0; bar < 3; ++bar) {
+            const uint8_t x = 20 + 2 * bar;
+            display_.drawLine(x, 23 - bar, x, 25 + bar,
+                              bar < active ? TerminalTheme::kAmber : kSpentOutline);
+        }
+        return;
+    }
     for (uint8_t dot = 0; dot < kSpinnerDotCount; ++dot) {
         display_.drawRect(kSpinnerDots[dot][0], kSpinnerDots[dot][1], 2, 2, TSRectangleFilled,
                           dot == active ? TerminalTheme::kAmber : kSpentOutline);
     }
+}
 
+void BadUsbScreen::drawLoadingProgress(uint8_t percent) {
+    drawAnimation(millis(), false);
     const uint8_t width = (kLoadingBarWidth - 2) * percent / 100;
     if (width > 0) {
         display_.drawRect(kLoadingBarX + 1, kLoadingBarY + 1, width, kLoadingBarHeight - 2,

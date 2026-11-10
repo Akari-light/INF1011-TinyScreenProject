@@ -133,12 +133,12 @@ arduino-cli compile --fqbn TinyCircuits:samd:tinyscreen --build-property "compil
 ```
 
 1. Power the board on and confirm Home highlights `BadUSB`. Tap L1 (`OPEN`) to reach `PAYLOADS`. Confirm it lists `Drop & Upload`, `Payload 2`, and `Payload 3`. The last two rows show `SOON`.
-2. With `Drop & Upload` selected, tap L1 again. Confirm the execution screen starts in `SAFE` and shows `Notepad only` if `TRACEHUB_PC1_IP` is absent or `Upload enabled` if you built with the address. `Upload enabled` describes the firmware configuration.
-3. Tap and release R2 (`ARM`). Confirm `ARMED`, `60s`, and ten full amber segments appear. At `59s`, the rightmost segment should show five-sixths fill.
-4. Within 60 seconds, tap L2 (`CANCEL`). Confirm the gauge clears and `SAFE` and `Cancelled` appear.
-5. Arm again and wait 60 seconds. Confirm the last segment stays lit through `01s`, then the gauge clears and `SAFE` and `Timed out` appear.
-6. Hold R2 through a timeout. Confirm the screen stays `SAFE` until you release the button and press it again.
-7. In `SAFE`, tap L2 (`BACK`) to return to the payload menu. Release L2 and tap it again to return to Home.
+2. With `Drop & Upload` selected, tap L1 again. Confirm the screen shows `PASSIVE`, a green shield, `DISARMED`, and `Standby`. R1 changes modes while disarmed. The underline beneath `P` or `A` marks the selected mode. The build commands above determine whether this payload includes browser upload.
+3. In Passive, tap and release R2 (`ARM`). Confirm `ARMED`, `60s`, and ten full amber segments appear. At `59s`, the rightmost segment should show five-sixths fill.
+4. Within 60 seconds, tap L2 (`CANCEL`). Confirm the gauge clears and the green shield and `Cancelled` appear.
+5. Arm again and wait 60 seconds. Confirm the last segment stays lit through `01s`, then the gauge clears and the green shield and `Timed out` appear.
+6. Hold R2 through a timeout. Confirm the screen stays disarmed until you release the button and press it again.
+7. While disarmed, tap L2 (`BACK`) to return to the payload menu. Release L2 and tap it again to return to Home.
 
 On 8 Nov 2026, Arvin verified startup in SAFE on the original standalone USB Test screen, arming with L2, cancellation with R2, and return to SAFE after waiting for the arming window to expire. Holding L2 through timeout left the screen in SAFE.
 
@@ -149,8 +149,8 @@ Focus a blank Notepad document for all of these checks. Expect it to stay blank 
 1. On Home, tap R1 (up arrow) twice. The selection pointer should move to `WI-FI SOON` and then back to `BadUSB`. Repeat with R2 (down arrow). Both directions wrap.
 2. Highlight `WI-FI SOON` and tap L1 (`OPEN`). Home should stay visible with the same selection.
 3. Highlight `BadUSB`. Hold L1 and confirm it stops at `PAYLOADS`. Release L1. Use R1 and R2 to cycle up and down through all three rows, including wraparound. On `Payload 2` and `Payload 3`, verify that `OPEN` dims and L1 stays on the menu.
-4. Return to `Drop & Upload` and hold L1 to open it in `SAFE`. With L1 still held, also hold R2. Release L1 while keeping R2 held for a second. The screen should stay `SAFE`. Release R2.
-5. Tap R2 to arm, then hold L2 (`CANCEL`). The execution screen should return to `SAFE`. Release L2 and hold it again (`BACK`). The payload menu should open with `Drop & Upload` still selected and stay there while you hold L2. Release L2 and tap it again to return to Home with `BadUSB` selected.
+4. Return to `Drop & Upload` and hold L1 to open it disarmed. With L1 still held, also hold R2. Release L1 while keeping R2 held for a second. The screen should keep showing the green shield. Release R2.
+5. Tap R2 to arm, then hold L2 (`CANCEL`). The execution screen should return to the green shield. Release L2 and hold it again (`BACK`). The payload menu should open with `Drop & Upload` still selected and stay there while you hold L2. Release L2 and tap it again to return to Home with `BadUSB` selected.
 
 On 8 Nov 2026, Arvin verified both wrap directions, the Wi-Fi placeholder, held-button transitions, and cancel followed by Back on the TinyScreen+ with the original USB Test labels. Notepad stayed blank throughout.
 
@@ -158,7 +158,7 @@ On 8 Nov 2026, Arvin verified both wrap directions, the Wi-Fi placeholder, held-
 
 On Home, check that the cyan pointer and brighter text clearly mark the selected row. The USB and Wi-Fi icons identify the two operations. A short divider separates the violet `OPEN` control from the larger green `HOME` title. The violet arrows mark the right-hand navigation buttons. `SOON` stays gray, and `OPEN` dims when Wi-Fi is selected.
 
-Open BadUSB and check that the three payload rows, selection pointer, and `SOON` labels are legible. Open `Drop & Upload` and check the large green `SAFE` label, shield, and build status. Arm with R2 and check the amber `ARMED` label, warning icon, and seconds readout. The ten slanted segments each represent six seconds. The rightmost lit segment loses one-sixth of its fill on every tick, then stays visible as a dim outline. The readout and lit segments fade from amber to red-orange. From `06s` through `01s`, the last segment and the digits gently dim and brighten. Check that the final one-sixth fill and `01s` stay legible at the dimmest point.
+Open BadUSB and check that the three payload rows, selection pointer, and `SOON` labels are legible. Open `Drop & Upload` and check that the underline moves between P and A with each R1 press. The checked shield marks the disarmed screen. In Passive, arm with R2 and check the warning triangle, amber `ARMED` label, and seconds readout. The ten slanted segments each represent six seconds. The rightmost lit segment loses one-sixth of its fill on every tick, then stays visible as a dim outline. The readout and lit segments fade from amber to red-orange. From `06s` through `01s`, the last segment and the digits gently dim and brighten. Check that the final one-sixth fill and `01s` stay legible at the dimmest point.
 
 On 8 Nov 2026, Arvin checked the icons and countdown on the TinyScreen+ and confirmed the final header separation, muted Wi-Fi text, and saturated green on the physical OLED. The final TinyScreen+ build used 30,900 bytes and passed upload verification.
 
@@ -166,14 +166,40 @@ On 8 Nov 2026, Arvin checked the icons and countdown on the TinyScreen+ and conf
 
 With the owned PC2 laptop unlocked, use the English (US) keyboard layout with Caps Lock off. The board opens Windows Run, starts Notepad, opens a blank document, types `hello world`, and sends Save As keystrokes for `%TEMP%\hello-world.txt`. The OLED shows `INJECTING` with a spinner and a bar that fills across the timed steps, then `KEYS SENT` after the board issues the sequence. Check the file on PC2 to confirm the save. [Arduino Keyboard library](https://github.com/arduino-libraries/Keyboard/tree/1.0.7)
 
-1. In `SAFE`, tap R1. Expect PC2 to stay on its current screen.
-2. Arm with R2, cancel with L2, then tap R1. Expect the same result. Repeat after letting the arming window expire.
-3. Tap and release R2 (`ARM`), then tap R1 (`INJECT`) within 60 seconds. Confirm the expected file exists and contains exactly `hello world`.
+1. While disarmed, tap R1 twice. Confirm the mode changes to Active and then back to Passive while PC2 stays on its current screen.
+2. In Passive, arm with R2, cancel with L2, then tap R1 twice. Confirm the screen remains disarmed and PC2 stays on its current screen. Repeat after letting the arming window expire.
+3. In Passive, tap and release R2 (`ARM`), then tap R1 (`INJECT`) within 60 seconds. Confirm the expected file exists and contains exactly `hello world`.
 4. Move the demo file aside before another save test. Arm again and hold R1 through the sequence. Check that PC2 receives just one sequence and that the board returns to `SAFE`.
 
 If the destination file already exists, Windows may show a replacement prompt. The sequence ends at the Save action and leaves the prompt for the operator.
 
 The 10 Nov 2026 TinyScreen+ build used 31,224 bytes and passed flash verification. Arvin confirmed that the board sequence saved `%TEMP%\hello-world.txt` on PC2. The exact file contents, OLED feedback, and button regression checks are pending for this build. The 8 Nov 2026 physical checks passed for the prior `tracedeck usb test` marker, including unarmed, cancelled, expired, and held-SEND cases.
+
+### Check USB plug-in detection on battery
+
+`UsbConnectionProbe` is a separate status-only sketch for the Active review checkpoint. It uses the same USB keyboard descriptor as TraceDeck and sends zero keyboard reports. Use the board's current COM port and a charged battery. The upload replaces the sketch on the board.
+
+```powershell
+$port = 'COM6'
+arduino-cli compile --fqbn TinyCircuits:samd:tinyscreen --port $port --upload .\firmware\diagnostics\UsbConnectionProbe
+```
+
+The OLED shows recent USB frames, `CFG` from the Arduino core, and the assigned USB `ADDR`. A device can retain its configuration and address when frames stop. R2 (`WATCH`) opens a 60-second observation window after startup settles and frames have been quiet for 250 ms. The probe waits for an addressed, configured link with continuing frames for 150 ms. `ENUM + LIVE` means the probe also saw the device unaddressed or unconfigured before that link. `LIVE NO ENUM` means frames returned without an observed loss of either. Both are observations about the USB bus. A wake that re-enumerates can look like a plug-in to this probe. [SAM D21 frame register](https://onlinedocs.microchip.com/oxy/GUID-22527069-B4D6-49B9-BACC-3AF1C52EB48C-en-US-21/GUID-BFF4D0A7-CEE1-4138-BA96-BF75A1E70463.html) · [TinyScreen+ schematic source](https://github.com/TinyCircuits/TinyCircuits-TinyScreenPlus-ASM2022/blob/master/design_files/ASM2022.sch)
+
+The probe shows `WATCHING USB` during the observation window. Keep the serial monitor closed during these tests. With the board connected, a serial client can send `?` at 115200 baud to read one snapshot. L2 (`CLEAR`) clears the latched watch result.
+
+1. **Startup connected.** With the cable attached to an awake PC2, restart the board. After it enumerates, confirm `FRAMES LIVE`, `CFG 1`, a nonzero address, and `IDLE`. Tap R2 and confirm `WAIT FOR QUIET`.
+2. **First plug-in.** Unplug and restart the board on battery alone. Wait at least two seconds, tap R2, and connect the data cable to awake PC2. Record the initial `CFG` and `ADDR` and the resulting watch label. Expect `ENUM + LIVE`.
+3. **Reconnect.** Unplug while leaving the board running on battery. Confirm `FRAMES QUIET` and record whether `CFG` and `ADDR` stayed set. Tap R2 and reconnect to awake PC2. Record the watch label again. Expect `ENUM + LIVE`.
+4. **Sleep and wake.** Leave the cable plugged in and sleep PC2 with the board running on battery. If frames go quiet, tap R2 and wake PC2 within 60 seconds. Record `LIVE NO ENUM`, `ENUM + LIVE`, or any other result. If frames never go quiet, record that the trial did not exercise a quiet-to-live transition. Repeat any ambiguous case before reviewing Active output.
+
+Bring the observed labels back to the review checkpoint. A wake result of `ENUM + LIVE` blocks using that result as a fresh-plug trigger. After the diagnostic, reflash TraceDeck with the normal build commands above.
+
+### Check the Active waiting screen
+
+Open `Drop & Upload`, press R1 to select A, and press R2 (`ARM`). The screen shows `WAIT USB`, a USB plug tile with animated signal bars, and the 60-second countdown. L2 cancels, and the mode selector returns when disarmed.
+
+This checkpoint uses Active for status only. With the board running on battery, try arming while already connected to an awake PC2. The existing connection should leave the screen waiting. Unplug the data cable, wait a second, and reconnect before expiry. The probe outcome `ENUM + LIVE` appears here as `DISARMED` and `USB seen (test)`. Repeat with PC2 sleep and wake while leaving the cable attached. A return of frames without re-enumeration shows `REPLUG USB` and preserves the original deadline. A `USB seen (test)` result from wake leaves Active keyboard output gated. Cancel, expiry, and the Active test path should leave a blank Notepad document on PC2 unchanged.
 
 ## Repository layout
 

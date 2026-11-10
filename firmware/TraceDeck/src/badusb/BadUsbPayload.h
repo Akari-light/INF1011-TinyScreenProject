@@ -9,6 +9,5 @@ struct BadUsbProgress {
 
 struct BadUsbPayload {
     const char *label;
-    const char *readyMessage;
     void (*run)(const BadUsbProgress &progress);
 };

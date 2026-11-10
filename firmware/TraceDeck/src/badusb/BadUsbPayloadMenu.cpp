@@ -5,10 +5,9 @@
 
 namespace {
 const BadUsbPayload kPayloads[] = {
-    {"Drop & Upload", dropUploadHasTraceHubUrl() ? "Upload enabled" : "Notepad only",
-     sendBadUsbDemoKeys},
-    {"Payload 2", nullptr, nullptr},
-    {"Payload 3", nullptr, nullptr},
+    {"Drop & Upload", sendBadUsbDemoKeys},
+    {"Payload 2", nullptr},
+    {"Payload 3", nullptr},
 };
 constexpr uint8_t kPayloadCount = sizeof(kPayloads) / sizeof(kPayloads[0]);
 constexpr uint8_t kFirstRowY = 16;

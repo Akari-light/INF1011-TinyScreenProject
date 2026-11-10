@@ -83,12 +83,8 @@ void sendNotepadSaveKeys(TimedProgress &timing) {
 }
 }
 
-bool dropUploadHasTraceHubUrl() {
-    return kTraceHubUploadUrl[0] != '\0';
-}
-
 void sendBadUsbDemoKeys(const BadUsbProgress &progress) {
-    const bool uploadEnabled = dropUploadHasTraceHubUrl();
+    const bool uploadEnabled = kTraceHubUploadUrl[0] != '\0';
     TimedProgress timing{progress, kNotepadTotalWaitMs + (uploadEnabled ? kUploadTotalWaitMs : 0), 0};
     Keyboard.begin(KeyboardLayout_en_US);
     sendNotepadSaveKeys(timing);
