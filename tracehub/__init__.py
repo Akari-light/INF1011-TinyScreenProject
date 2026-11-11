@@ -1,6 +1,8 @@
 import os
 from pathlib import Path
+
 from flask import Flask
+
 from . import database
 from .badusb_upload import badusb_upload_blueprint
 from .loot_receiver import load_helper_tokens, loot_receiver_blueprint
@@ -8,8 +10,13 @@ from .ops_dashboard import dashboard_blueprint
 
 
 def create_app(server_role="dashboard"):
+    # Create one TraceHub listener using the selected server role.
     instance_directory = Path(os.environ["LOCALAPPDATA"]) / "TraceDeck"
-    app = Flask(__name__, instance_path=str(instance_directory), static_folder=None)
+    app = Flask(
+        __name__,
+        instance_path=str(instance_directory),
+        static_folder="static" if server_role == "dashboard" else None,
+    )
     app.config["DATABASE_PATH"] = instance_directory / "tracehub.sqlite3"
 
     if server_role == "dashboard":

@@ -1,74 +1,108 @@
+{% macro receipt_time(value) -%}
+<time datetime="{{ value }}">{{ value|replace('T', ' ')|replace('+00:00', 'Z') }}</time>
+{%- endmacro %}
 <!doctype html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>TraceDeck Ops Console</title>
+    <meta name="color-scheme" content="dark">
+    <title>TraceHub Ops Console</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='console.css') }}">
+    <script src="{{ url_for('static', filename='console.js') }}" defer></script>
 </head>
 <body>
-    <main>
-        <h1>TraceDeck Ops Console</h1>
-        <section id="loot-feed" data-latest="{{ loot_entries[0].loot_id if loot_entries else '' }}">
-            <h2>Latest 50 loot entries</h2>
-            {% if loot_entries %}
-            <ol>
+    <main class="console">
+        <header class="console-header">
+            <div class="console-brand">
+                <span class="terminal-mark" aria-hidden="true">&gt;_</span>
+                <div>
+                    <span class="eyebrow">TraceHub</span>
+                    <h1>Ops Console</h1>
+                </div>
+            </div>
+            <div class="connection">
+                <span id="feed-status" role="status">Connecting</span>
+                <span class="console-host">PC1 · Loopback</span>
+            </div>
+        </header>
+
+        <div class="workspaces">
+            <span class="workspace-current">BadUSB</span>
+            <span>Wi-Fi <small>Planned</small></span>
+        </div>
+
+        <section id="collection-overview" class="overview" aria-labelledby="overview-heading">
+            <header class="feed-heading">
+                <div><h2 id="overview-heading">Collection overview</h2><p>All stored captures</p></div>
+                <p>Latest ingest (UTC) · {% if latest %}{{ receipt_time(latest.received_at) }}{% else %}Waiting for data{% endif %}</p>
+            </header>
+            <dl class="metrics">
+                <div><dt>Captures</dt><dd>{{ '{:,}'.format(inventory.captures) }}<small>{{ inventory.files }} with a filename</small></dd></div>
+                <div><dt>Source IPs</dt><dd>{{ '{:,}'.format(inventory.source_ips) }}<small>Distinct addresses observed</small></dd></div>
+                <div><dt>Identified hostnames</dt><dd>{{ '{:,}'.format(inventory.hostnames) }}<small>{{ inventory.unknown_hostname_captures or 0 }} captures without one</small></dd></div>
+                <div><dt>File bytes</dt><dd>{{ '{:,}'.format(inventory.file_bytes) }}<small>Across known file sizes</small></dd></div>
+            </dl>
+        </section>
+
+        <section id="loot-feed" data-revision="{{ latest.loot_id if latest else '' }}:{{ inventory.captures }}" aria-labelledby="feed-heading">
+            <header class="feed-heading">
+                <h2 id="feed-heading">Loot Log</h2>
+                <p id="receipt-count">{{ loot_entries|length }} shown · {{ matching }} matching</p>
+            </header>
+            <form id="log-controls" class="log-controls" method="get" action="{{ url_for('dashboard.show_dashboard') }}">
+                <label class="log-search">Search
+                    <input type="search" name="q" value="{{ query }}" maxlength="200" placeholder="IP, hostname, file, ID or content">
+                </label>
+                <label>Hostname status
+                    <select name="hostname_status">
+                        <option value="">All</option>
+                        <option value="identified"{% if hostname_status == 'identified' %} selected{% endif %}>Identified</option>
+                        <option value="unknown"{% if hostname_status == 'unknown' %} selected{% endif %}>Unknown</option>
+                    </select>
+                </label>
+                <label>Sort
+                    <select name="sort">
+                        <option value="newest"{% if sort == 'newest' %} selected{% endif %}>Newest first</option>
+                        <option value="oldest"{% if sort == 'oldest' %} selected{% endif %}>Oldest first</option>
+                    </select>
+                </label>
+            </form>
+            <div class="receipt-columns" aria-hidden="true">
+                <span>Received (UTC)</span><span>Observed source IP</span><span>Hostname</span><span>Artifact</span>
+            </div>
+            <ol id="receipt-list" class="receipt-list">
                 {% for entry in loot_entries %}
-                <li>
-                    {% if entry.filename %}
-                    <pre>{{ entry.file_text }}</pre>
-                    {% else %}
-                    <p>{{ entry.file_text }}</p>
-                    {% endif %}
-                    <dl>
-                        {% if entry.filename %}
-                        <dt>Filename</dt>
-                        <dd>{{ entry.filename }}</dd>
-                        <dt>Upload size</dt>
-                        <dd>{{ entry.file_size_bytes }} bytes</dd>
-                        {% endif %}
-                        {% if entry.helper_id %}
-                        <dt>Helper ID</dt>
-                        <dd>{{ entry.helper_id }}</dd>
-                        <dt>Reported hostname</dt>
-                        <dd>{{ entry.reported_hostname }}</dd>
-                        {% else %}
-                        <dt>Source</dt>
-                        <dd>BadUSB browser demo</dd>
-                        {% endif %}
-                        <dt>Peer IP observed by PC1</dt>
-                        <dd>{{ entry.observed_peer_ip }}</dd>
-                        <dt>Received by PC1 (UTC)</dt>
-                        <dd><time datetime="{{ entry.received_at }}">{{ entry.received_at }}</time></dd>
-                        <dt>Loot ID</dt>
-                        <dd><code>{{ entry.loot_id }}</code></dd>
-                    </dl>
+                <li data-receipt="{{ entry.loot_id }}">
+                    <details>
+                        <summary>
+                            {{ receipt_time(entry.received_at) }}
+                            <code class="receipt-ip">{{ entry.observed_peer_ip }}</code>
+                            <span class="receipt-host{% if not entry.hostname %} unknown{% endif %}">{{ entry.hostname or 'Unknown' }}</span>
+                            <code class="receipt-file">{{ entry.filename or 'Text capture' }}</code>
+                            <span class="chevron" aria-hidden="true"></span>
+                        </summary>
+                        <div class="receipt-detail">
+                            <dl>
+                                <dt>Loot ID</dt><dd><code>{{ entry.loot_id }}</code></dd>
+                                <dt>Filename</dt><dd><code>{{ entry.filename or 'Unavailable' }}</code></dd>
+                                <dt>Upload size</dt><dd>{{ (entry.file_size_bytes ~ ' bytes') if entry.file_size_bytes is not none else 'Unavailable' }}</dd>
+                                {% if entry.helper_id %}
+                                <dt>Helper ID</dt><dd>{{ entry.helper_id }}</dd>
+                                {% endif %}
+                            </dl>
+                            <div>
+                                <h3 class="eyebrow">Full content</h3>
+                                <pre class="file-preview" tabindex="0" aria-label="Full receipt content"><code>{{ entry.file_text }}</code></pre>
+                            </div>
+                        </div>
+                    </details>
                 </li>
                 {% endfor %}
             </ol>
-            {% else %}
-            <p>Waiting for the first loot submission.</p>
-            {% endif %}
+            <p id="feed-empty"{% if loot_entries %} hidden{% endif %}>{{ 'No captures match these controls.' if inventory.captures else 'No captures collected yet.' }}</p>
+            <p id="feed-announcement" class="sr-only" role="status"></p>
         </section>
     </main>
-    <script>
-        async function refreshLoot() {
-            try {
-                const response = await fetch(window.location.pathname, { cache: "no-store" });
-                if (response.ok) {
-                    const page = new DOMParser().parseFromString(await response.text(), "text/html");
-                    const feed = document.getElementById("loot-feed");
-                    const updatedFeed = page.getElementById("loot-feed");
-                    if (updatedFeed && updatedFeed.dataset.latest !== feed.dataset.latest) {
-                        feed.replaceWith(updatedFeed);
-                    }
-                }
-            } catch {
-                // Keep checking if the console is restarting.
-            }
-            window.setTimeout(refreshLoot, 2000);
-        }
-
-        window.setTimeout(refreshLoot, 2000);
-    </script>
 </body>
 </html>
