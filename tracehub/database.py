@@ -90,14 +90,49 @@ def record_loot(
     return loot_entry, loot_created
 
 
-def list_loot(database_path):
+LOOT_HOSTNAME_FILTERS = {
+    "identified": "reported_hostname <> ''",
+    "unknown": "reported_hostname = ''",
+}
+LOOT_SORT_ORDERS = {
+    "newest": "sequence DESC",
+    "oldest": "sequence ASC",
+}
+
+
+def read_loot_log(database_path, *, query, hostname_status, sort):
+    conditions = []
+    params = []
+    if hostname_status in LOOT_HOSTNAME_FILTERS:
+        conditions.append(LOOT_HOSTNAME_FILTERS[hostname_status])
+    if query:
+        fields = ("loot_id", "filename", "message", "observed_peer_ip", "reported_hostname", "helper_id")
+        conditions.append("(" + " OR ".join(f"instr(lower({field}), lower(?)) > 0" for field in fields) + ")")
+        params.extend([query] * len(fields))
+    where = "WHERE " + " AND ".join(conditions) if conditions else ""
+    order = LOOT_SORT_ORDERS.get(sort, LOOT_SORT_ORDERS["newest"])
+
     with closing(sqlite3.connect(database_path)) as connection:
         connection.row_factory = sqlite3.Row
-        return connection.execute("""
-            SELECT loot_id, helper_id, reported_hostname, observed_peer_ip,
+        connection.execute("BEGIN")
+        inventory = connection.execute("""
+            SELECT COUNT(*) AS captures, COUNT(filename) AS files,
+                   COUNT(DISTINCT NULLIF(observed_peer_ip, '')) AS source_ips,
+                   COUNT(DISTINCT NULLIF(lower(reported_hostname), '')) AS hostnames,
+                   SUM(CASE WHEN reported_hostname = '' THEN 1 ELSE 0 END) AS unknown_hostname_captures,
+                   COALESCE(SUM(file_size_bytes), 0) AS file_bytes
+            FROM loot
+        """).fetchone()
+        latest = connection.execute("""
+            SELECT loot_id, received_at FROM loot ORDER BY sequence DESC LIMIT 1
+        """).fetchone()
+        matching = connection.execute(f"SELECT COUNT(*) FROM loot {where}", params).fetchone()[0]
+        entries = connection.execute(f"""
+            SELECT loot_id, helper_id, reported_hostname AS hostname, observed_peer_ip,
                    message AS file_text, filename, file_size_bytes, received_at
-            FROM loot ORDER BY sequence DESC LIMIT 50
-        """).fetchall()
+            FROM loot {where} ORDER BY {order} LIMIT 50
+        """, params).fetchall()
+    return inventory, latest, matching, entries
 
 
 # def record_iot_result(

@@ -1,9 +1,12 @@
 from uuid import UUID, uuid4
+
 from flask import Blueprint, abort, current_app, render_template, request
+
 from . import database
 
 # Browser upload for the fixed BadUSB demo on the isolated LAN.
 badusb_upload_blueprint = Blueprint("badusb_upload", __name__)
+
 
 @badusb_upload_blueprint.get("/badusb/upload")
 def show_badusb_upload():

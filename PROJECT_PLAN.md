@@ -46,7 +46,7 @@ Track build, simulation and physical results separately. Record the revision, te
 | BadUSB payload menu | Review | On the OLED, open and back out of Drop & Upload, verify the disabled slots and held-button transitions, and run the configured demo once. |
 | 60-second arming gauge | Review | Verify the `60s` to `59s` change, one-sixth of a segment draining per second from right to left, the final red-orange pulse through `01s`, cancel, and expiry on the OLED. |
 | Passive and Active triggers | Diagnostic review | The payload opens in Passive and Disarmed. R1 changes mode while disarmed. Armed Active waits for a fresh USB observation, then reports a status-only result. Verify battery-powered reconnect and sleep or wake before enabling Active keyboard output. |
-| Ops Console redesign | Planned | Make the latest receipt, source IP, time and content preview easy to scan in the dark terminal layout. Verify live updates and access to full file metadata. |
+| Ops Console redesign | Review | Review the collection overview and Loot Log on PC1. Verify search, filters, sorting, and live updates. Open a log row to check the full loot ID, file metadata, and content. |
 | Wi-Fi path and combined rehearsal | Planned after the BadUSB blocks | Implement the PC1 mock IoT endpoint and the direct board request. Rehearse both paths using the same setup for the video and live demo. |
 | E04 hostname attribution | Deferred | Resolve browser source IPs through reverse DNS or a time-valid, operator-verified mapping. Preserve the original IP and receipt time. Keep these names and their provenance separate from client-reported hostnames already stored by the authenticated HTTPS receiver. Allow unknown names and test two known devices plus an unresolved device. |
 

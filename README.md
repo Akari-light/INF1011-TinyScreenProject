@@ -30,7 +30,9 @@ $traceDeckPython = Join-Path $traceDeckEnvironment 'Scripts\python.exe'
 & $traceDeckPython -m flask --app tracehub --no-debug run --host 127.0.0.1
 ```
 
-Open `http://127.0.0.1:5000` on PC1. The dashboard checks for new loot every two seconds and shows the newest 50 entries. SQLite retains the saved loot across restarts in `%LOCALAPPDATA%\TraceDeck\tracehub.sqlite3`.
+Open `http://127.0.0.1:5000` on PC1. The collection overview shows total captures, distinct observed IPs, identified hostnames, file bytes, and the latest ingest time in UTC. The Loot Log searches all stored captures by IP, hostname, filename, loot ID, helper ID, or content. Type to search, choose All, Identified, or Unknown under Hostname status, and choose Newest first or Oldest first. Results update automatically. Clear the search field to see all records that match the selected hostname status. The log shows up to 50 matches and checks for new captures every two seconds. Open a row for the full loot ID, file metadata, and complete text.
+
+Observed source IP is the address PC1 sees. The HTTPS helper supplies its own hostname, which qualifies as Identified in the filter. Browser uploads show `Unknown` in the hostname column. SQLite retains the saved loot across restarts in `%LOCALAPPDATA%\TraceDeck\tracehub.sqlite3`.
 
 To start with an empty Ops Console, stop both TraceHub processes on PC1 and rename `tracehub.sqlite3` to a backup. Starting TraceHub again creates an empty database.
 
@@ -208,12 +210,16 @@ The TraceDeck sketch is in `firmware/TraceDeck/`. Add the remaining directories 
 | Directory | Purpose |
 | --- | --- |
 | `firmware/` | Device firmware and the selected toolchain's build configuration |
-| `tracehub/` | PC1 Ops Console, BadUSB demo upload, HTTPS loot receiver, and SQLite storage |
+| `tracehub/` | Flask app factory (`__init__.py`), route modules, shared SQLite storage (`database.py`), and planned Wi-Fi placeholder (`wifi.py`) |
+| `tracehub/templates/` | Ops Console and browser upload HTML templates |
+| `tracehub/static/` | Ops Console CSS and JavaScript |
 | `hardware/` | Component list, pin assignments, wiring diagrams, and editable design files |
 | `tests/` | System test procedures and selected reproducible evidence |
 | `docs/` | Supporting diagrams, source acknowledgements, and demo/submission material |
 
 Use the chosen toolchain's native layout inside `firmware/`.
+
+TraceHub uses one Python package. Flask calls `create_app()` in `tracehub/__init__.py` to create the selected listener. The route modules are `ops_dashboard.py`, `badusb_upload.py`, and `loot_receiver.py`; each groups its related routes in a Flask blueprint. The factory registers only the blueprint for the selected role. The dashboard also serves `/static/` assets under its loopback access check. The startup commands above select these roles.
 
 ## Verification and reused material
 
