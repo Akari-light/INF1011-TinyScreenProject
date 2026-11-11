@@ -5,7 +5,7 @@
 
 namespace {
 const BadUsbPayload kPayloads[] = {
-    {"Drop & Upload", sendBadUsbDemoKeys},
+    {"Drop & Upload", sendDropUploadKeys},
     {"Payload 2", nullptr},
     {"Payload 3", nullptr},
 };
