@@ -2,4 +2,4 @@
 
 #include "../../BadUsbPayload.h"
 
-void sendBadUsbDemoKeys(const BadUsbProgress &progress);
+void sendDropUploadKeys(const BadUsbProgress &progress);
