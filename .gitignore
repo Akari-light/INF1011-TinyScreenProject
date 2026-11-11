@@ -1,2 +1,16 @@
 # Personal files and local working material
 /.local/
+
+# Python bytecode
+__pycache__/
+
+# Local TraceHub credentials and runtime data
+helpers.json
+intake-*.pem
+tracehub.sqlite3*
+
+# Local Arduino firmware exports
+/firmware/TraceDeck/build/
+
+#vscode cfg settings
+.vscode/

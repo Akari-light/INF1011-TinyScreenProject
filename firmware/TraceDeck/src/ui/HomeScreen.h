@@ -7,11 +7,11 @@ public:
     explicit HomeScreen(TinyScreen &display);
 
     void enter();
-    bool openUsbOnPress(uint8_t pressed);
+    bool openBadUsbOnPress(uint8_t pressed);
 
 private:
     void drawSelection();
 
     TinyScreen &display_;
-    bool usbSelected_ = true;
+    bool badUsbSelected_ = true;
 };

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TraceDeck Ops Console</title>
+</head>
+<body>
+    <main>
+        <h1>TraceDeck Ops Console</h1>
+        <section id="loot-feed" data-latest="{{ loot_entries[0].loot_id if loot_entries else '' }}">
+            <h2>Latest 50 loot entries</h2>
+            {% if loot_entries %}
+            <ol>
+                {% for entry in loot_entries %}
+                <li>
+                    {% if entry.filename %}
+                    <pre>{{ entry.file_text }}</pre>
+                    {% else %}
+                    <p>{{ entry.file_text }}</p>
+                    {% endif %}
+                    <dl>
+                        {% if entry.filename %}
+                        <dt>Filename</dt>
+                        <dd>{{ entry.filename }}</dd>
+                        <dt>Upload size</dt>
+                        <dd>{{ entry.file_size_bytes }} bytes</dd>
+                        {% endif %}
+                        {% if entry.helper_id %}
+                        <dt>Helper ID</dt>
+                        <dd>{{ entry.helper_id }}</dd>
+                        <dt>Reported hostname</dt>
+                        <dd>{{ entry.reported_hostname }}</dd>
+                        {% else %}
+                        <dt>Source</dt>
+                        <dd>BadUSB browser demo</dd>
+                        {% endif %}
+                        <dt>Peer IP observed by PC1</dt>
+                        <dd>{{ entry.observed_peer_ip }}</dd>
+                        <dt>Received by PC1 (UTC)</dt>
+                        <dd><time datetime="{{ entry.received_at }}">{{ entry.received_at }}</time></dd>
+                        <dt>Loot ID</dt>
+                        <dd><code>{{ entry.loot_id }}</code></dd>
+                    </dl>
+                </li>
+                {% endfor %}
+            </ol>
+            {% else %}
+            <p>Waiting for the first loot submission.</p>
+            {% endif %}
+        </section>
+    </main>
+    <script>
+        async function refreshLoot() {
+            try {
+                const response = await fetch(window.location.pathname, { cache: "no-store" });
+                if (response.ok) {
+                    const page = new DOMParser().parseFromString(await response.text(), "text/html");
+                    const feed = document.getElementById("loot-feed");
+                    const updatedFeed = page.getElementById("loot-feed");
+                    if (updatedFeed && updatedFeed.dataset.latest !== feed.dataset.latest) {
+                        feed.replaceWith(updatedFeed);
+                    }
+                }
+            } catch {
+                // Keep checking if the console is restarting.
+            }
+            window.setTimeout(refreshLoot, 2000);
+        }
+
+        window.setTimeout(refreshLoot, 2000);
+    </script>
+</body>
+</html>
