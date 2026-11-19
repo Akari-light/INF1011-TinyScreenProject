@@ -112,12 +112,11 @@ With the OLED upright, L1 and R1 are the upper buttons. L2 and R2 are the lower 
 
 Arm Active mode on battery and observe `WAIT USB`. A newly enumerated USB connection consumes the arm and executes the selected payload once. A disabled payload opens the disabled screen. When frames resume without observed re-enumeration, the screen shows `REPLUG USB` and keeps the original deadline. Verify one execution on connection, then verify that reconnecting while disarmed produces no output and that cancellation and expiry prevent execution.
 
-For a dedicated diagnostic, flash `firmware/diagnostics/UsbConnectionProbe` with the same board and port flags. R2 starts a 60-second watch and L2 clears the result. Check battery plug-in, connected startup, reconnect without reboot, and sleep or wake with the cable attached. Record `ENUM + LIVE` or `LIVE NO ENUM`. A wake that re-enumerates can trigger an armed Active payload, so include that case in physical testing. Reflash TraceDeck after using the probe. [TinyScreen+ schematic](https://github.com/TinyCircuits/TinyCircuits-TinyScreenPlus-ASM2022/blob/master/design_files/ASM2022.sch)
+Check battery plug-in, connected startup, reconnect without reboot, and sleep or wake with the cable attached. A wake that re-enumerates can trigger an armed Active payload, so include that case in physical testing. [TinyScreen+ schematic](https://github.com/TinyCircuits/TinyCircuits-TinyScreenPlus-ASM2022/blob/master/design_files/ASM2022.sch)
 
 ## Repository layout
 
 - `firmware/TraceDeck/` contains the Arduino sketch, shared UI and input code, and the BadUSB payloads under `src/badusb/payloads/`.
-- `firmware/diagnostics/` contains the USB connection probe.
 - `tracehub/` contains the Flask factory, listener modules, shared SQLite storage, templates, and the redesigned console assets on main.
 
 Record build checks and physical rehearsal results separately. Preserve upstream licenses and attribute reused material in the source and video.
