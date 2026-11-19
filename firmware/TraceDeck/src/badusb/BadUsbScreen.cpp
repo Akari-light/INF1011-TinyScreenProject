@@ -158,13 +158,13 @@ void BadUsbScreen::drawState(const char *message) {
         drawText(display_, 10, 39, kMuted, message);
         display_.drawLine(8, 54, 4, 57, kControl);
         display_.drawLine(4, 57, 8, 60, kControl);
-        drawText(display_, 12, 52, kControl, "BACK");
-        drawText(display_, 72, 52, kAmber, "ARM");
+        drawControl(display_, 12, 54, kControl, "BACK");
+        drawControl(display_, 77, 54, kAmber, "ARM");
         return;
     }
 
     display_.drawRect(4, 55, 5, 5, TSRectangleFilled, kCancel);
-    drawText(display_, 12, 52, kCancel, "CANCEL");
+    drawControl(display_, 12, 54, kCancel, "CANCEL");
     if (mode_ == Mode::Active) {
         drawText(display_, 4, 2, kCyan, payload_->label);
         display_.drawRect(4, 16, 23, 18, TSRectangleNoFill, kFrame);
@@ -177,7 +177,7 @@ void BadUsbScreen::drawState(const char *message) {
         drawText(display_, 4, 2, kCyan, "PASSIVE");
         drawStatusIcon();
         drawText(display_, 31, 16, kAmber, "ARMED", liberationSansNarrow_14ptFontInfo);
-        drawText(display_, 50, 2, kGreen, "INJECT");
+        drawControl(display_, 56, 3, kGreen, "INJECT");
         display_.drawLine(88, 3, 92, 7, kGreen);
         display_.drawLine(92, 7, 88, 11, kGreen);
     }
@@ -187,10 +187,10 @@ void BadUsbScreen::drawModeSwitch(uint16_t ink) {
     using namespace TerminalTheme;
 
     const bool passive = mode_ == Mode::Passive;
-    drawText(display_, 76, 2, passive ? ink : kMuted, "P");
-    drawText(display_, 87, 2, passive ? kMuted : ink, "A");
-    const uint8_t x = passive ? 75 : 86;
-    display_.drawLine(x, 12, x + 8, 12, ink);
+    drawControl(display_, 78, 3, passive ? ink : kMuted, "P");
+    drawControl(display_, 89, 3, passive ? kMuted : ink, "A");
+    const uint8_t x = passive ? 77 : 88;
+    display_.drawLine(x, 10, x + 4, 10, ink);
 }
 
 void BadUsbScreen::drawStatusIcon() {
@@ -325,7 +325,7 @@ void BadUsbScreen::drawInjectionResult(bool successful) {
     drawText(display_, 4, 18, ink, successful ? "SUCCESSFUL" : "FAILED",
              liberationSansNarrow_10ptFontInfo);
     drawText(display_, 4, 36, kMuted, successful ? "Sequence complete" : "USB interrupted");
-    drawText(display_, 4, 52, kControl, "ANY KEY / 5s");
+    drawControl(display_, 4, 54, kControl, "ANY KEY / 5S");
 }
 
 void BadUsbScreen::drawDisabledPayload() {
@@ -346,7 +346,7 @@ void BadUsbScreen::drawDisabledPayload() {
 
     display_.drawLine(7, 54, 4, 57, kControl);
     display_.drawLine(4, 57, 7, 60, kControl);
-    drawText(display_, 12, 52, kControl, "BACK");
+    drawControl(display_, 12, 54, kControl, "BACK");
     drawText(display_, 69, 52, kGreen, "SAFE");
 }
 

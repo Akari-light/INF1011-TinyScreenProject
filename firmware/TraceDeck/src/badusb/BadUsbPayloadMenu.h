@@ -1,7 +1,6 @@
 #pragma once
 
-#include <TinyScreen.h>
-
+#include "../ui/MenuPage.h"
 #include "BadUsbPayload.h"
 
 class BadUsbPayloadMenu {
@@ -15,8 +14,8 @@ public:
     const BadUsbPayload &selectedPayload() const;
 
 private:
-    void drawSelection();
+    void drawOpenHint();
 
     TinyScreen &display_;
-    uint8_t selected_ = 0;
+    MenuPage menu_;
 };

@@ -21,5 +21,6 @@ constexpr uint16_t kControl = color(179, 183, 255);
 void drawFrame(TinyScreen &display);
 void drawText(TinyScreen &display, uint8_t x, uint8_t y, uint16_t foreground, const char *text,
               const FONT_INFO &font = thinPixel7_10ptFontInfo);
+void drawControl(TinyScreen &display, uint8_t x, uint8_t y, uint16_t foreground, const char *text);
 
 }

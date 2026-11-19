@@ -1,6 +1,6 @@
 #pragma once
 
-#include <TinyScreen.h>
+#include "MenuPage.h"
 
 class HomeScreen {
 public:
@@ -10,8 +10,8 @@ public:
     bool openBadUsbOnPress(uint8_t pressed);
 
 private:
-    void drawSelection();
+    void drawHint();
 
     TinyScreen &display_;
-    bool badUsbSelected_ = true;
+    MenuPage menu_;
 };

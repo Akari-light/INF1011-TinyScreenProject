@@ -73,6 +73,10 @@ if (-not (Test-Path -LiteralPath $receiverCertificate) -or -not (Test-Path -Lite
 
 Regenerate the certificate when the server's IP changes or the certificate expires. Give each enrolled helper its own bearer token and the server's public certificate for TLS validation. The multipart request contains a UUID `submission_id`, a client-reported `hostname`, and one UTF-8 `.txt` file up to 1 KiB. A new upload returns `201` with a loot ID. An identical retry returns `200` with the same ID. A conflicting retry returns `409`. TraceHub displays the hostname reported by the authenticated helper. Browser uploads show an unknown hostname.
 
+On Home, use R1 or R2 to move the selection between BadUSB and Wi-Fi Soon. The cyan pointer and green text mark the selected row. `OPEN` sits beside the upper-left button and dims on Wi-Fi Soon.
+
+In Payloads, the amber dash marks the selection. Cyan dots mark other visible items and gray dots mark offscreen items. Lists longer than six items share the same six positions.
+
 ## Build and run Drop & Upload
 
 Install the board packages and libraries once. [Arduino CLI installation](https://docs.arduino.cc/arduino-cli/installation/) · [TinyScreen+ setup](https://learn.tinycircuits.com/Processors/TinyScreen%2B_Setup_Tutorial/)
@@ -103,7 +107,7 @@ arduino-cli compile --fqbn TinyCircuits:samd:tinyscreen --build-property "compil
 
 With the OLED upright, L1 and R1 are the upper buttons. L2 and R2 are the lower buttons.
 
-1. On Home, press L1 to open BadUSB, then press L1 on **Drop & Upload**. R1 and R2 move through the payload list. The two `SOON` slots show a dimmed OPEN control. L2 goes back.
+1. On Home, press L1 to open BadUSB, then press L1 on **Drop & Upload**. R1 and R2 scroll through the payload list. De-Shield and Pwning show a disabled screen when opened. L2 goes back from the payload list.
 2. The payload opens in **Passive · Disarmed**. R1 toggles Passive and Active while disarmed. R2 arms the selected mode for 60 seconds. L2 cancels while armed and goes back while disarmed.
 3. In Passive, connect the armed TinyScreen+ to the target laptop and press R1 (**INJECT**). The OLED shows progress, then a result screen. `SUCCESSFUL` means the keyboard sequence returned without a detected USB interruption. `FAILED` reports unavailable USB or an interruption observed during progress updates. Any fresh button press or five seconds returns to the payload menu. For the default build, check `%TEMP%\hello-world.txt` on the target laptop. For the upload build, match the browser's loot ID to the receipt in the Ops Console.
 4. Move the previous demo file out of `%TEMP%` on the target laptop before repeating to avoid a replacement prompt. Check navigation, cancel, expiry, and held buttons. A held INJECT should run the sequence once. Cancel and expiry should prevent uploads.
