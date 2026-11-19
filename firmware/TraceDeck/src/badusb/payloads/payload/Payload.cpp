@@ -1,9 +1,9 @@
-#include "Payload3.h"
+#include "Payload.h"
 
 #include <Keyboard.h>
 
 namespace {
-constexpr char kTestMessage[] = "TraceDeck payload 3 test";
+constexpr char kTestMessage[] = "TraceDeck payload test";
 constexpr uint32_t kTypingWaitMs = 1000;
 constexpr uint32_t kProgressRefreshMs = 125;
 
@@ -16,14 +16,14 @@ void waitWithProgress(const BadUsbProgress &progress, uint32_t durationMs) {
         delay(remainingMs < kProgressRefreshMs ? remainingMs : kProgressRefreshMs);
         elapsedMs = millis() - startedAt;
         const uint32_t waitedMs = elapsedMs < durationMs ? elapsedMs : durationMs;
-        // The screen draws 100% after the payload returns.
+        // Reserve completion for the result screen after the payload returns.
         progress.update(progress.context, waitedMs * 99 / durationMs);
         elapsedMs = millis() - startedAt;
     }
 }
 }
 
-void sendPayload3Keys(const BadUsbProgress &progress) {
+void sendPayloadKeys(const BadUsbProgress &progress) {
     if (!USBDevice.configured()) {
         return;
     }

@@ -105,7 +105,7 @@ With the OLED upright, L1 and R1 are the upper buttons. L2 and R2 are the lower 
 
 1. On Home, press L1 to open BadUSB, then press L1 on **Drop & Upload**. R1 and R2 move through the payload list. The two `SOON` slots show a dimmed OPEN control. L2 goes back.
 2. The payload opens in **Passive · Disarmed**. R1 toggles Passive and Active while disarmed. R2 arms the selected mode for 60 seconds. L2 cancels while armed and goes back while disarmed.
-3. In Passive, connect the armed TinyScreen+ to the target laptop and press R1 (**INJECT**). The OLED shows progress, then `KEYS SENT` if USB remains configured. For the default build, check `%TEMP%\hello-world.txt` on the target laptop. For the upload build, match the browser's loot ID to the receipt in the Ops Console.
+3. In Passive, connect the armed TinyScreen+ to the target laptop and press R1 (**INJECT**). The OLED shows progress, then a result screen. `SUCCESSFUL` means the keyboard sequence returned without a detected USB interruption. `FAILED` reports unavailable USB or an interruption observed during progress updates. Any fresh button press or five seconds returns to the payload menu. For the default build, check `%TEMP%\hello-world.txt` on the target laptop. For the upload build, match the browser's loot ID to the receipt in the Ops Console.
 4. Move the previous demo file out of `%TEMP%` on the target laptop before repeating to avoid a replacement prompt. Check navigation, cancel, expiry, and held buttons. A held INJECT should run the sequence once. Cancel and expiry should prevent uploads.
 
 ### Check Active mode

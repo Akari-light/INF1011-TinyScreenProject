@@ -33,6 +33,8 @@ constexpr uint8_t kLoadingBarHeight = 10;
 constexpr uint8_t kSpinnerDots[][2] = {{86, 19}, {91, 24}, {86, 29}, {81, 24}};
 constexpr uint8_t kSpinnerDotCount = sizeof(kSpinnerDots) / sizeof(kSpinnerDots[0]);
 constexpr uint32_t kSpinnerFrameMs = 125;
+constexpr uint32_t kResultDisplayMs = 5000;
+constexpr uint32_t kUsbFrameTimeoutMs = 100;
 
 uint16_t countdownInk(uint8_t seconds, uint8_t breathFrame) {
     if (seconds <= kSecondsPerSegment) {
@@ -57,6 +59,7 @@ BadUsbScreen::BadUsbScreen(TinyScreen &display) : display_(display) {}
 void BadUsbScreen::enter(const BadUsbPayload &payload) {
     payload_ = &payload;
     payloadDisabled_ = false;
+    showingResult_ = false;
     mode_ = Mode::Passive;
     armed_ = false;
     usbWatch_.reset(millis());
@@ -65,6 +68,10 @@ void BadUsbScreen::enter(const BadUsbPayload &payload) {
 }
 
 bool BadUsbScreen::update(uint8_t pressed, uint32_t now) {
+    if (showingResult_) {
+        return pressed != 0 || now - resultShownAt_ >= kResultDisplayMs;
+    }
+
     if (payloadDisabled_) {
         return pressed == kCancelOrBackButton;
     }
@@ -84,7 +91,7 @@ bool BadUsbScreen::update(uint8_t pressed, uint32_t now) {
         if (USBDevice.configured()) {
             runPayload();
         } else {
-            drawState("USB unavailable");
+            drawInjectionResult(false);
         }
     } else if (!armed_ && pressed == kArmButton) {
         armed_ = true;
@@ -271,6 +278,9 @@ void BadUsbScreen::runPayload() {
     using namespace TerminalTheme;
 
     payloadDisabled_ = false;
+    injectionFailed_ = false;
+    lastUsbFrame_ = USB->DEVICE.FNUM.bit.FNUM;
+    lastUsbFrameAt_ = millis();
     clearStatusArea();
     drawText(display_, 4, 2, kCyan, payload_->label);
     drawText(display_, 4, 16, kAmber, "INJECTING", liberationSansNarrow_14ptFontInfo);
@@ -279,7 +289,7 @@ void BadUsbScreen::runPayload() {
     drawLoadingProgress(0);
 
     payload_->run({this, [](void *context, uint8_t percent) {
-        static_cast<BadUsbScreen *>(context)->drawLoadingProgress(percent);
+        static_cast<BadUsbScreen *>(context)->updateInjectionProgress(percent);
     }, [](void *context) {
         static_cast<BadUsbScreen *>(context)->drawDisabledPayload();
     }});
@@ -288,11 +298,34 @@ void BadUsbScreen::runPayload() {
         return;
     }
 
-    const bool usbConfigured = USBDevice.configured();
-    if (usbConfigured) {
-        drawLoadingProgress(100);
+    updateInjectionProgress(99);
+    drawInjectionResult(!injectionFailed_);
+}
+
+void BadUsbScreen::updateInjectionProgress(uint8_t percent) {
+    const uint32_t now = millis();
+    const uint16_t frame = USB->DEVICE.FNUM.bit.FNUM;
+    if (frame != lastUsbFrame_) {
+        lastUsbFrame_ = frame;
+        lastUsbFrameAt_ = now;
     }
-    drawState(usbConfigured ? "KEYS SENT" : "USB unavailable");
+    injectionFailed_ |= !USBDevice.configured() || now - lastUsbFrameAt_ >= kUsbFrameTimeoutMs;
+    drawLoadingProgress(percent);
+}
+
+void BadUsbScreen::drawInjectionResult(bool successful) {
+    using namespace TerminalTheme;
+
+    armed_ = false;
+    showingResult_ = true;
+    resultShownAt_ = millis();
+    clearStatusArea();
+    drawText(display_, 4, 2, kCyan, "RESULT");
+    const uint16_t ink = successful ? kGreen : kCancel;
+    drawText(display_, 4, 18, ink, successful ? "SUCCESSFUL" : "FAILED",
+             liberationSansNarrow_10ptFontInfo);
+    drawText(display_, 4, 36, kMuted, successful ? "Sequence complete" : "USB interrupted");
+    drawText(display_, 4, 52, kControl, "ANY KEY / 5s");
 }
 
 void BadUsbScreen::drawDisabledPayload() {
