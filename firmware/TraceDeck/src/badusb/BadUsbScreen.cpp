@@ -105,7 +105,7 @@ bool BadUsbScreen::update(uint8_t pressed, uint32_t now) {
             if (usbWatch_.result() == UsbConnectionWatch::Result::Enumerated) {
                 armed_ = false;
                 usbWatch_.clear();
-                drawState("USB seen (test)");
+                runPayload();
                 return false;
             }
             if (usbWatch_.result() == UsbConnectionWatch::Result::FramesOnly) {
