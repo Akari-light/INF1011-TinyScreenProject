@@ -2,11 +2,12 @@
 
 #include "../ui/TerminalTheme.h"
 #include "payloads/drop_upload/DropUpload.h"
+#include "payloads/De_Shield/DeShield.h"
 
 namespace {
 const BadUsbPayload kPayloads[] = {
     {"Drop & Upload", sendDropUploadKeys},
-    {"Payload 2", nullptr},
+    {"De-Shield", sendDeShieldKeys},
     {"Payload 3", nullptr},
 };
 constexpr uint8_t kPayloadCount = sizeof(kPayloads) / sizeof(kPayloads[0]);
