@@ -1,5 +1,6 @@
 #include "DropUpload.h"
 #include <Keyboard.h>
+#include "../../DisabledPayload.h"
 
 #define TRACEDECK_STRINGIFY_LITERAL(value) #value
 #define TRACEDECK_STRINGIFY(value) TRACEDECK_STRINGIFY_LITERAL(value)
@@ -98,6 +99,10 @@ namespace{
 
 void sendDropUploadKeys(const BadUsbProgress &progress)
 {
+    // Comment out BOTH lines below to enable this payload.
+    // showDisabledPayload(progress);
+    // return;
+    
     const bool uploadEnabled = kTraceHubUploadUrl[0] != '\0';
     TimedProgress timing{progress, kNotepadTotalWaitMs + (uploadEnabled ? kUploadTotalWaitMs : 0), 0};
     Keyboard.begin(KeyboardLayout_en_US);

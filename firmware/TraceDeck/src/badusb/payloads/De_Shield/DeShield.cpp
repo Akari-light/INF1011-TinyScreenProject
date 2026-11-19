@@ -1,5 +1,6 @@
 #include "DeShield.h"
 #include <Keyboard.h>
+#include "../../DisabledPayload.h"
 
 namespace {
     // Duckyscript DELAY step used between most keystrokes.
@@ -45,6 +46,10 @@ namespace {
 
 void sendDeShieldKeys(const BadUsbProgress &progress)
 {
+    // Comment out BOTH lines below to enable this payload.
+    showDisabledPayload(progress);
+    return;
+
     TimedProgress timing{progress, kTotalMs, 0};
     Keyboard.begin(KeyboardLayout_en_US);
 

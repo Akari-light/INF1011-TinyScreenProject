@@ -56,6 +56,7 @@ BadUsbScreen::BadUsbScreen(TinyScreen &display) : display_(display) {}
 
 void BadUsbScreen::enter(const BadUsbPayload &payload) {
     payload_ = &payload;
+    payloadDisabled_ = false;
     mode_ = Mode::Passive;
     armed_ = false;
     usbWatch_.reset(millis());
@@ -64,6 +65,10 @@ void BadUsbScreen::enter(const BadUsbPayload &payload) {
 }
 
 bool BadUsbScreen::update(uint8_t pressed, uint32_t now) {
+    if (payloadDisabled_) {
+        return pressed == kCancelOrBackButton;
+    }
+
     usbWatch_.update(now);
     const uint32_t elapsed = now - armedAt_;
     if (armed_ && elapsed >= kArmWindowMs) {
@@ -265,6 +270,7 @@ void BadUsbScreen::drawGauge(uint8_t seconds, bool redrawOutlines, uint16_t ink)
 void BadUsbScreen::runPayload() {
     using namespace TerminalTheme;
 
+    payloadDisabled_ = false;
     clearStatusArea();
     drawText(display_, 4, 2, kCyan, payload_->label);
     drawText(display_, 4, 16, kAmber, "INJECTING", liberationSansNarrow_14ptFontInfo);
@@ -274,13 +280,41 @@ void BadUsbScreen::runPayload() {
 
     payload_->run({this, [](void *context, uint8_t percent) {
         static_cast<BadUsbScreen *>(context)->drawLoadingProgress(percent);
+    }, [](void *context) {
+        static_cast<BadUsbScreen *>(context)->drawDisabledPayload();
     }});
+
+    if (payloadDisabled_) {
+        return;
+    }
 
     const bool usbConfigured = USBDevice.configured();
     if (usbConfigured) {
         drawLoadingProgress(100);
     }
     drawState(usbConfigured ? "KEYS SENT" : "USB unavailable");
+}
+
+void BadUsbScreen::drawDisabledPayload() {
+    using namespace TerminalTheme;
+
+    payloadDisabled_ = true;
+    armed_ = false;
+    clearStatusArea();
+    drawText(display_, 4, 2, kCyan, payload_->label);
+    // Closed padlock beside the execution status.
+    display_.drawRect(5, 24, 15, 10, TSRectangleNoFill, kAmber);
+    display_.drawLine(8, 24, 8, 19, kAmber);
+    display_.drawLine(8, 19, 17, 19, kAmber);
+    display_.drawLine(17, 19, 17, 24, kAmber);
+    display_.drawLine(12, 27, 12, 30, kAmber);
+    drawText(display_, 26, 18, kAmber, "DISABLED", liberationSansNarrow_10ptFontInfo);
+    drawText(display_, 4, 37, kMuted, "Debug lock active");
+
+    display_.drawLine(7, 54, 4, 57, kControl);
+    display_.drawLine(4, 57, 7, 60, kControl);
+    drawText(display_, 12, 52, kControl, "BACK");
+    drawText(display_, 69, 52, kGreen, "SAFE");
 }
 
 void BadUsbScreen::drawAnimation(uint32_t now, bool usbWait) {

@@ -24,6 +24,7 @@ private:
     void drawCountdown(uint8_t seconds, uint8_t breathFrame);
     void drawGauge(uint8_t seconds, bool redrawOutlines, uint16_t ink);
     void runPayload();
+    void drawDisabledPayload();
     void drawAnimation(uint32_t now, bool usbWait);
     void drawLoadingProgress(uint8_t percent);
 
@@ -32,6 +33,7 @@ private:
     Mode mode_ = Mode::Passive;
     UsbConnectionWatch usbWatch_;
     bool armed_ = false;
+    bool payloadDisabled_ = false;
     uint32_t armedAt_ = 0;
     uint8_t displayedSeconds_ = 0;
     uint8_t displayedBreathFrame_ = 0;
