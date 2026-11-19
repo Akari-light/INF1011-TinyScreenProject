@@ -6,7 +6,7 @@ TraceDeck demonstrates USB and Wi-Fi interactions on an isolated ICT1011 lab net
 
 ## Current checkpoint
 
-- **BadUSB firmware.** The refactored sketch has a payload picker, a 60-second arming gauge, and injection progress. Drop & Upload is the implemented payload. Passive requires manual ARM then INJECT. Active is a status-only connection preview.
+- **BadUSB firmware.** The refactored sketch has a payload picker, a 60-second arming gauge, and injection progress. Drop & Upload is the implemented payload. Passive requires manual ARM then INJECT. Active consumes a physical arm and executes the selected payload once on USB enumeration. The Active execution change awaits physical verification.
 - **TraceHub.** The redesigned Ops Console and flattened Flask layout merged to main at `4949912`. The dashboard has a collection overview and a searchable Loot Log with hostname status, sorting, and live refresh. The console and both intake profiles share local SQLite storage.
 - **Verification.** An earlier Passive run produced the expected 11-byte upload in TraceHub. Both firmware variants compile. Repeat the demo with the current firmware and redesigned Ops Console.
 - **Integration.** The latest Drop & Upload changes are on the BadUSB branch. The redesigned console is on `main`. See [README.md](README.md) for setup and the build flag for each revision.
@@ -26,7 +26,7 @@ The TraceHub receipt confirms the upload. It records the file text and metadata,
 
 | ID | Requirement | Current evidence and remaining check |
 | --- | --- | --- |
-| H01 | Require a physical arm and a deliberate trigger. Consume the arm once. Cancel and expiry disarm the board. | **V01 partial.** A prior Passive run passed. Recheck the configured build for repeat, unarmed, cancelled, expired, and held-INJECT cases. Active remains in diagnostic review. |
+| H01 | Require a physical arm and a deliberate trigger. Consume the arm once. Cancel and expiry disarm the board. | **V01 partial.** A prior Passive run passed. Recheck the configured build for repeat, unarmed, cancelled, expired, and held-INJECT cases. Verify Active execution and disabled-payload behavior on connection. |
 | H02 | Have the Wi-Fi node send one direct lab request and display its result or timeout. | **V02 planned.** Verify with the borrowed shield and the server's mock IoT service. |
 | H03 | Store the fixed USB upload and independently record the mock IoT request and outcome. | **V03 partial.** Flask checks passed for the browser intake and identical retries. The mock service and live Wi-Fi evidence are pending. |
 | H04 | Present evidence with its source, identifier, and server timestamp. | **V03 partial.** The merged dashboard passed local checks for search, receipt rendering, and loopback assets. Verify a new receipt and its detail view in the Ops Console. |
@@ -39,7 +39,7 @@ Record the revision, tester, date, and outcome for physical tests.
 | Work | Status | Exit check |
 | --- | --- | --- |
 | BadUSB and Ops Console rehearsal | Ready for physical review | Check the OLED menu and gauge. Run Passive and match the target browser's loot ID to the Ops Console receipt. Repeat the button and expiry checks. |
-| Active connection diagnostic | In review | Compare a battery-powered USB reconnect without reboot to sleep and wake on the target laptop with the cable attached. Keep keyboard output gated if wake and attachment are ambiguous. |
+| Active execution | Physical verification pending | Verify one execution after a physically armed connection, disabled-payload routing, and no execution after cancellation or expiry. Compare reconnect with sleep and wake, since wake can also re-enumerate USB. |
 | Wi-Fi path | Planned | Implement the mock service and board request, verify success and timeout, and rehearse the combined demo. |
 | E04 hostname attribution | Deferred | Map browser source IPs using reverse DNS or a time-valid, operator-verified record. Preserve the original IP and receipt time. Keep this provenance distinct from the client-reported hostname already stored by the authenticated HTTPS receiver. Verify two known devices and an unresolved device. |
 

@@ -105,14 +105,14 @@ With the OLED upright, L1 and R1 are the upper buttons. L2 and R2 are the lower 
 
 1. On Home, press L1 to open BadUSB, then press L1 on **Drop & Upload**. R1 and R2 move through the payload list. The two `SOON` slots show a dimmed OPEN control. L2 goes back.
 2. The payload opens in **Passive · Disarmed**. R1 toggles Passive and Active while disarmed. R2 arms the selected mode for 60 seconds. L2 cancels while armed and goes back while disarmed.
-3. In Passive, connect the armed TinyScreen+ to the target laptop and press R1 (**INJECT**). The OLED shows progress, then `KEYS SENT` if USB remains configured. For the default build, check `%TEMP%\hello-world.txt` on the target laptop. For the upload build, match the browser's loot ID to the receipt in the Ops Console.
+3. In Passive, connect the armed TinyScreen+ to the target laptop and press R1 (**INJECT**). The OLED shows progress, then a result screen. `SUCCESSFUL` means the keyboard sequence returned without a detected USB interruption. `FAILED` reports unavailable USB or an interruption observed during progress updates. Any fresh button press or five seconds returns to the payload menu. For the default build, check `%TEMP%\hello-world.txt` on the target laptop. For the upload build, match the browser's loot ID to the receipt in the Ops Console.
 4. Move the previous demo file out of `%TEMP%` on the target laptop before repeating to avoid a replacement prompt. Check navigation, cancel, expiry, and held buttons. A held INJECT should run the sequence once. Cancel and expiry should prevent uploads.
 
-### Check the Active preview
+### Check Active mode
 
-Active currently reports USB connection events on the OLED. Arm on battery and observe `WAIT USB`. A new configured connection can produce `USB seen (test)` and disarm the board. When frames resume without observed re-enumeration, the screen shows `REPLUG USB` and keeps the original deadline. Keyboard output requires Passive mode and a manual INJECT.
+Arm Active mode on battery and observe `WAIT USB`. A newly enumerated USB connection consumes the arm and executes the selected payload once. A disabled payload opens the disabled screen. When frames resume without observed re-enumeration, the screen shows `REPLUG USB` and keeps the original deadline. Verify one execution on connection, then verify that reconnecting while disarmed produces no output and that cancellation and expiry prevent execution.
 
-For a dedicated diagnostic, flash `firmware/diagnostics/UsbConnectionProbe` with the same board and port flags. R2 starts a 60-second watch and L2 clears the result. Check battery plug-in, connected startup, reconnect without reboot, and sleep or wake with the cable attached. Record `ENUM + LIVE` or `LIVE NO ENUM`. A wake that re-enumerates can resemble a fresh plug-in, so this check gates Active output. Reflash TraceDeck after using the probe. [TinyScreen+ schematic](https://github.com/TinyCircuits/TinyCircuits-TinyScreenPlus-ASM2022/blob/master/design_files/ASM2022.sch)
+For a dedicated diagnostic, flash `firmware/diagnostics/UsbConnectionProbe` with the same board and port flags. R2 starts a 60-second watch and L2 clears the result. Check battery plug-in, connected startup, reconnect without reboot, and sleep or wake with the cable attached. Record `ENUM + LIVE` or `LIVE NO ENUM`. A wake that re-enumerates can trigger an armed Active payload, so include that case in physical testing. Reflash TraceDeck after using the probe. [TinyScreen+ schematic](https://github.com/TinyCircuits/TinyCircuits-TinyScreenPlus-ASM2022/blob/master/design_files/ASM2022.sch)
 
 ## Repository layout
 
