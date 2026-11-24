@@ -48,6 +48,8 @@ The upload build sends `Test_Important.zip` to `http://<server-ip>:8080/badusb/u
 
 PowerShell prints the loot ID after TraceHub saves the ZIP and database row, then deletes the temporary ZIP on the target. On failure, it keeps the temporary ZIP and prints its path. The original `Documents\Test_Important` folder stays on the target. Restart the upload listener and dashboard after updating this code so both use the added archive metadata column.
 
+Expand a Loot Log entry to see image previews from its saved ZIP. JPG/JPEG, PNG, GIF, and WebP images appear below the text preview with their archive filenames. Click an image to open it in a new tab. Previews also work for earlier uploads whose original ZIP is still stored. Restart the dashboard and refresh the browser after updating the preview code.
+
 The listeners share `%LOCALAPPDATA%\TraceDeck\tracehub.sqlite3`. To start with an empty console, stop all TraceHub listeners and rename the database to a backup. TraceHub creates a new database on restart.
 
 ### Optional authenticated HTTPS receiver

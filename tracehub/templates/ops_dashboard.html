@@ -129,6 +129,14 @@
                                     <div>
                                         <h3 class="eyebrow">Full content</h3>
                                         <pre class="file-preview" tabindex="0" aria-label="Full receipt content"><code>{{ entry.file_text }}</code></pre>
+                                        {% for image in image_entries.get(entry.loot_id, []) %}
+                                        <figure class="loot-image">
+                                            <a href="{{ url_for('dashboard.show_loot_image', loot_id=entry.loot_id, entry_index=image.index) }}" target="_blank" rel="noopener">
+                                                <img src="{{ url_for('dashboard.show_loot_image', loot_id=entry.loot_id, entry_index=image.index) }}" alt="Preview of {{ image.name }}" loading="lazy" decoding="async">
+                                            </a>
+                                            <figcaption>{{ image.name }}</figcaption>
+                                        </figure>
+                                        {% endfor %}
                                     </div>
                                 </div>
                             </details>

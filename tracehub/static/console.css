@@ -197,6 +197,9 @@ details[open] .chevron { transform: rotate(225deg); }
 .receipt-detail dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); align-content: start; gap: 10px 16px; margin: 0; font-size: 12px; }
 .receipt-detail dt { color: var(--muted); }
 .receipt-detail dd { margin: 0; overflow-wrap: anywhere; }
+.loot-image { margin: 20px 0 0; }
+.loot-image img { display: block; max-width: 100%; max-height: 360px; width: auto; height: auto; border-radius: 4px; }
+.loot-image figcaption { margin-top: 8px; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
 .file-preview {
     max-height: 16rem;
     margin: 10px 0 0;
