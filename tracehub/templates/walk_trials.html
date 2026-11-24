@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Walk-away audit · TraceHub</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='console.css') }}">
+</head>
+<body>
+  <div class="console">
+    <header class="console-header">
+      <span class="console-brand"><span class="terminal-mark">&gt;_</span> TraceHub</span>
+      {% if has_home %}<a href="{{ url_for('dashboard.show_dashboard') }}">Ops Console</a>{% endif %}
+    </header>
+    <main class="workspace-main">
+      <header class="workspace-heading"><div><p class="eyebrow">Bluetooth LE / Windows</p><h1>Walk-away audit</h1></div>
+        <a href="{{ url_for('walk.trials') }}">Refresh</a></header>
+      {% for trial, result in records %}
+      <section class="overview">
+        <header class="feed-heading"><div><p class="eyebrow">{{ trial.kind }} · Session {{ trial.session }}</p>
+          <h2>{{ result.status }}</h2></div>{% if result.elapsed_s is not none %}<strong>{{ result.elapsed_s }} s</strong>{% endif %}</header>
+        <p>{{ result.reason }}</p>
+        <dl class="metrics">
+          <div><dt>Doorway button · UTC</dt><dd><small>{{ result.marker_utc or '—' }}</small></dd></div>
+          <div><dt>Windows lock · UTC</dt><dd><small>{{ result.lock_utc or '—' }}</small></dd></div>
+          <div><dt>Desk beacon at doorway</dt><dd><small>{% if result.radio %}{{ result.radio.age_ms }} ms ago{% if result.radio.rssi is not none %} · {{ result.radio.rssi }} dBm{% endif %}{% else %}—{% endif %}</small></dd></div>
+          <div><dt>Clock uncertainty</dt><dd><small>{% if result.uncertainty_ms is not none %}±{{ result.uncertainty_ms }} ms{% else %}—{% endif %}</small></dd></div>
+        </dl>
+        <details><summary>Trial evidence</summary>
+          <p><code>{{ trial.id }}</code> · {{ trial.started }}</p>
+          <p>{{ trial.route }} · {{ trial.configuration }}</p>
+          <p>{{ trial.events|length }} observer records, including heartbeats.</p>
+          {% for ms, kind, utc in trial.events if kind != 'heartbeat' %}<p><time>{{ utc }}</time> · {{ kind }}</p>{% endfor %}
+        </details>
+      </section>
+      {% else %}<section class="overview"><h2>No completed trials</h2><p>Start the Windows observer and complete a manual control or doorway walk.</p></section>{% endfor %}
+    </main>
+  </div>
+</body></html>

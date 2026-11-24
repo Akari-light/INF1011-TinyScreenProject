@@ -3,11 +3,12 @@
 #include <TinyScreen.h>
 
 #include "BleScanner.h"
+#include "WalkAudit.h"
 
 class BleNearbyScreen {
 public:
     explicit BleNearbyScreen(TinyScreen &display) : display_(display) {}
-    void enter();
+    void enter(bool audit = false);
     bool update(uint8_t pressed);
 
 private:
@@ -26,6 +27,8 @@ private:
 
     TinyScreen &display_;
     Ble::Scanner scanner_;
+    WalkAudit audit_;
+    bool auditing_ = false;
     uint32_t lastDraw_ = 0, lastLog_ = 0;
     uint16_t selected_ = 0;
     bool details_ = false, explicitSelection_ = false;

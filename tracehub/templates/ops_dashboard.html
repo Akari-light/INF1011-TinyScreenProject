@@ -12,97 +12,134 @@
     <script src="{{ url_for('static', filename='console.js') }}" defer></script>
 </head>
 <body>
-    <main class="console">
+    <a class="skip-link" href="#loot-feed">Skip to log</a>
+    <div class="console">
         <header class="console-header">
-            <div class="console-brand">
+            <a class="console-brand" href="{{ url_for('dashboard.show_dashboard') }}" aria-label="TraceHub home">
                 <span class="terminal-mark" aria-hidden="true">&gt;_</span>
-                <div>
-                    <span class="eyebrow">TraceHub</span>
-                    <h1>Ops Console</h1>
-                </div>
-            </div>
+                <span class="brand-name">TraceHub</span>
+                <span class="brand-caption">Ops Console</span>
+            </a>
             <div class="connection">
                 <span id="feed-status" role="status">Connecting</span>
-                <span class="console-host">PC1 · Loopback</span>
+                <span class="console-host">Local operator</span>
             </div>
         </header>
 
-        <div class="workspaces">
-            <span class="workspace-current">BadUSB</span>
-            <span>Wi-Fi <small>Planned</small></span>
+        <div class="workspace-layout">
+            <aside class="workspace-sidebar">
+                <p class="eyebrow">Workspaces</p>
+                <nav class="workspaces" aria-label="Workspaces">
+                    <a href="{{ url_for('walk.trials') }}">
+                        <span class="workspace-symbol" aria-hidden="true">↗</span>
+                        <span><strong>Walk-away audit</strong><small>Windows session lock</small></span>
+                    </a>
+                    <a class="workspace-current" href="{{ url_for('dashboard.show_dashboard') }}" aria-current="page">
+                        <span class="workspace-symbol" aria-hidden="true">↓</span>
+                        <span><strong>Loot Log</strong><small>Drop &amp; Upload</small></span>
+                        <span class="workspace-arrow" aria-hidden="true">↗</span>
+                    </a>
+                    <a href="{{ url_for('reverse_shell.shell_console') }}">
+                        <span class="workspace-symbol" aria-hidden="true">&gt;_</span>
+                        <span><strong>Reverse Shell</strong><small>Pwning console</small></span>
+                        <span class="workspace-arrow" aria-hidden="true">↗</span>
+                    </a>
+                </nav>
+                <div class="sidebar-context">
+                    <span class="eyebrow">TraceDeck</span>
+                    <p>BadUSB operations</p>
+                </div>
+            </aside>
+
+            <main class="workspace-main">
+                <header class="workspace-heading">
+                    <div>
+                        <p class="eyebrow">BadUSB / Drop &amp; Upload</p>
+                        <h1>Loot Log</h1>
+                    </div>
+                    <span class="refresh-note">Auto-refresh · 2s</span>
+                </header>
+
+                <section id="collection-overview" class="overview" aria-labelledby="overview-heading">
+                    <header class="feed-heading">
+                        <h2 id="overview-heading">Collection overview</h2>
+                        <p>All captures</p>
+                    </header>
+                    <dl class="metrics">
+                        <div><dt>Captures</dt><dd>{{ '{:,}'.format(inventory.captures) }}</dd><small>{{ inventory.files }} with file metadata</small></div>
+                        <div><dt>Source IPs</dt><dd>{{ '{:,}'.format(inventory.source_ips) }}</dd><small>Distinct observed addresses</small></div>
+                        <div><dt>Identified hosts</dt><dd>{{ '{:,}'.format(inventory.hostnames) }}</dd><small>{{ inventory.unknown_hostname_captures or 0 }} captures with unknown hostname</small></div>
+                        <div><dt>Captured data</dt><dd>{{ '{:,}'.format(inventory.file_bytes) }}<span class="metric-unit">B</span></dd><small>Known upload sizes</small></div>
+                    </dl>
+                    <div class="latest-ingest">
+                        <span>Last capture</span>
+                        {% if latest %}{{ receipt_time(latest.received_at) }} <span class="time-zone">UTC</span>{% else %}<span>Waiting for first upload</span>{% endif %}
+                    </div>
+                </section>
+
+                <section id="loot-feed" data-revision="{{ latest.loot_id if latest else '' }}:{{ inventory.captures }}" aria-labelledby="feed-heading">
+                    <header class="feed-heading">
+                        <h2 id="feed-heading">Captured files</h2>
+                        <p id="receipt-count">{{ loot_entries|length }} shown · {{ matching }} matching</p>
+                    </header>
+                    <form id="log-controls" class="log-controls" method="get" action="{{ url_for('dashboard.show_dashboard') }}">
+                        <label class="log-search">Search
+                            <input type="search" name="q" value="{{ query }}" maxlength="200" placeholder="Search IP, hostname, filename, ID or content" autocomplete="off" spellcheck="false" aria-controls="receipt-list">
+                        </label>
+                        <label>Hostname status
+                            <select name="hostname_status">
+                                <option value="">All</option>
+                                <option value="identified"{% if hostname_status == 'identified' %} selected{% endif %}>Identified</option>
+                                <option value="unknown"{% if hostname_status == 'unknown' %} selected{% endif %}>Unknown</option>
+                            </select>
+                        </label>
+                        <label>Order
+                            <select name="sort">
+                                <option value="newest"{% if sort == 'newest' %} selected{% endif %}>Newest first</option>
+                                <option value="oldest"{% if sort == 'oldest' %} selected{% endif %}>Oldest first</option>
+                            </select>
+                        </label>
+                    </form>
+                    <div class="receipt-columns" aria-hidden="true">
+                        <span>Received (UTC)</span><span>Observed source IP</span><span>Hostname</span><span>Artifact</span>
+                    </div>
+                    <ol id="receipt-list" class="receipt-list">
+                        {% for entry in loot_entries %}
+                        <li data-receipt="{{ entry.loot_id }}">
+                            <details>
+                                <summary>
+                                    {{ receipt_time(entry.received_at) }}
+                                    <code class="receipt-ip">{{ entry.observed_peer_ip }}</code>
+                                    <span class="receipt-host{% if not entry.hostname %} unknown{% endif %}">{{ entry.hostname or 'Unknown' }}</span>
+                                    <code class="receipt-file">{{ entry.filename or 'Text capture' }}</code>
+                                    <span class="chevron" aria-hidden="true"></span>
+                                </summary>
+                                <div class="receipt-detail">
+                                    <dl>
+                                        <dt>Loot ID</dt><dd><code>{{ entry.loot_id }}</code></dd>
+                                        <dt>Filename</dt><dd><code>{{ entry.filename or 'Unavailable' }}</code></dd>
+                                        <dt>Upload size</dt><dd>{{ (entry.file_size_bytes ~ ' bytes') if entry.file_size_bytes is not none else 'Unavailable' }}</dd>
+                                        {% if entry.archive_sha256 %}
+                                        <dt>Original files</dt><dd><a href="{{ url_for('dashboard.download_loot_archive', loot_id=entry.loot_id) }}">Download ZIP folder</a></dd>
+                                        {% endif %}
+                                        {% if entry.helper_id %}
+                                        <dt>Helper ID</dt><dd>{{ entry.helper_id }}</dd>
+                                        {% endif %}
+                                    </dl>
+                                    <div>
+                                        <h3 class="eyebrow">Full content</h3>
+                                        <pre class="file-preview" tabindex="0" aria-label="Full receipt content"><code>{{ entry.file_text }}</code></pre>
+                                    </div>
+                                </div>
+                            </details>
+                        </li>
+                        {% endfor %}
+                    </ol>
+                    <p id="feed-empty"{% if loot_entries %} hidden{% endif %}>{{ 'No matching captures. Try another search or hostname status.' if inventory.captures else 'Waiting for an upload. Captures will appear here automatically.' }}</p>
+                    <p id="feed-announcement" class="sr-only" role="status"></p>
+                </section>
+            </main>
         </div>
-
-        <section id="collection-overview" class="overview" aria-labelledby="overview-heading">
-            <header class="feed-heading">
-                <div><h2 id="overview-heading">Collection overview</h2><p>All stored captures</p></div>
-                <p>Latest ingest (UTC) · {% if latest %}{{ receipt_time(latest.received_at) }}{% else %}Waiting for data{% endif %}</p>
-            </header>
-            <dl class="metrics">
-                <div><dt>Captures</dt><dd>{{ '{:,}'.format(inventory.captures) }}<small>{{ inventory.files }} with a filename</small></dd></div>
-                <div><dt>Source IPs</dt><dd>{{ '{:,}'.format(inventory.source_ips) }}<small>Distinct addresses observed</small></dd></div>
-                <div><dt>Identified hostnames</dt><dd>{{ '{:,}'.format(inventory.hostnames) }}<small>{{ inventory.unknown_hostname_captures or 0 }} captures without one</small></dd></div>
-                <div><dt>File bytes</dt><dd>{{ '{:,}'.format(inventory.file_bytes) }}<small>Across known file sizes</small></dd></div>
-            </dl>
-        </section>
-
-        <section id="loot-feed" data-revision="{{ latest.loot_id if latest else '' }}:{{ inventory.captures }}" aria-labelledby="feed-heading">
-            <header class="feed-heading">
-                <h2 id="feed-heading">Loot Log</h2>
-                <p id="receipt-count">{{ loot_entries|length }} shown · {{ matching }} matching</p>
-            </header>
-            <form id="log-controls" class="log-controls" method="get" action="{{ url_for('dashboard.show_dashboard') }}">
-                <label class="log-search">Search
-                    <input type="search" name="q" value="{{ query }}" maxlength="200" placeholder="IP, hostname, file, ID or content">
-                </label>
-                <label>Hostname status
-                    <select name="hostname_status">
-                        <option value="">All</option>
-                        <option value="identified"{% if hostname_status == 'identified' %} selected{% endif %}>Identified</option>
-                        <option value="unknown"{% if hostname_status == 'unknown' %} selected{% endif %}>Unknown</option>
-                    </select>
-                </label>
-                <label>Sort
-                    <select name="sort">
-                        <option value="newest"{% if sort == 'newest' %} selected{% endif %}>Newest first</option>
-                        <option value="oldest"{% if sort == 'oldest' %} selected{% endif %}>Oldest first</option>
-                    </select>
-                </label>
-            </form>
-            <div class="receipt-columns" aria-hidden="true">
-                <span>Received (UTC)</span><span>Observed source IP</span><span>Hostname</span><span>Artifact</span>
-            </div>
-            <ol id="receipt-list" class="receipt-list">
-                {% for entry in loot_entries %}
-                <li data-receipt="{{ entry.loot_id }}">
-                    <details>
-                        <summary>
-                            {{ receipt_time(entry.received_at) }}
-                            <code class="receipt-ip">{{ entry.observed_peer_ip }}</code>
-                            <span class="receipt-host{% if not entry.hostname %} unknown{% endif %}">{{ entry.hostname or 'Unknown' }}</span>
-                            <code class="receipt-file">{{ entry.filename or 'Text capture' }}</code>
-                            <span class="chevron" aria-hidden="true"></span>
-                        </summary>
-                        <div class="receipt-detail">
-                            <dl>
-                                <dt>Loot ID</dt><dd><code>{{ entry.loot_id }}</code></dd>
-                                <dt>Filename</dt><dd><code>{{ entry.filename or 'Unavailable' }}</code></dd>
-                                <dt>Upload size</dt><dd>{{ (entry.file_size_bytes ~ ' bytes') if entry.file_size_bytes is not none else 'Unavailable' }}</dd>
-                                {% if entry.helper_id %}
-                                <dt>Helper ID</dt><dd>{{ entry.helper_id }}</dd>
-                                {% endif %}
-                            </dl>
-                            <div>
-                                <h3 class="eyebrow">Full content</h3>
-                                <pre class="file-preview" tabindex="0" aria-label="Full receipt content"><code>{{ entry.file_text }}</code></pre>
-                            </div>
-                        </div>
-                    </details>
-                </li>
-                {% endfor %}
-            </ol>
-            <p id="feed-empty"{% if loot_entries %} hidden{% endif %}>{{ 'No captures match these controls.' if inventory.captures else 'No captures collected yet.' }}</p>
-            <p id="feed-announcement" class="sr-only" role="status"></p>
-        </section>
-    </main>
+    </div>
 </body>
 </html>

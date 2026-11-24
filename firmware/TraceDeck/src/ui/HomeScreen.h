@@ -4,14 +4,14 @@
 
 class HomeScreen {
 public:
+    enum class Action { None, BadUsb, Bluetooth };
+
     explicit HomeScreen(TinyScreen &display);
 
     void enter();
-    bool openBadUsbOnPress(uint8_t pressed);
+    Action update(uint8_t pressed);
 
 private:
-    void drawHint();
-
     TinyScreen &display_;
     MenuPage menu_;
 };

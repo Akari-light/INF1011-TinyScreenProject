@@ -58,6 +58,7 @@ public:
     RecentAddresses recent(uint32_t now) const;
     uint8_t namedList(uint16_t *numbers, uint32_t now, uint16_t selected) const;
     const Observation *find(uint16_t number) const;
+    const Observation *deskBeacon(uint32_t now) const;
     void protect(uint16_t number) { protectedNumber_ = number; }
 
     static constexpr uint8_t kCapacity = 80;

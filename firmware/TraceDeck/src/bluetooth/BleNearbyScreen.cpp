@@ -42,7 +42,13 @@ void appendHex(char *out, const Ble::Packet &packet) {
 }
 }
 
-void BleNearbyScreen::enter() {
+void BleNearbyScreen::enter(bool audit) {
+    auditing_ = audit;
+    if (audit) {
+        audit_.enter();
+        scanner_.begin();
+        return;
+    }
     for (auto &line : lines_) line = {};
     details_ = false;
     forceDraw_ = true;
@@ -59,6 +65,11 @@ void BleNearbyScreen::enter() {
 
 bool BleNearbyScreen::update(uint8_t pressed) {
     scanner_.update();
+    if (auditing_) {
+        if (!audit_.update(display_, scanner_, pressed)) return false;
+        scanner_.end();
+        return true;
+    }
     const uint32_t now = millis();
     if (pressed == TSButtonLowerLeft) {
         if (!details_) {
@@ -74,7 +85,13 @@ bool BleNearbyScreen::update(uint8_t pressed) {
     const Ble::RecentAddresses recent = scanner_.recent(now);
     for (Line &line : lines_) line = {};
     if (details_) {
-        detail(now, scanner_.find(selected_), recent);
+        const auto *entry = scanner_.find(selected_);
+        if (pressed == TSButtonUpperLeft && entry && entry->lab && !strcmp(entry->name, "TD-B01")) {
+            auditing_ = true;
+            audit_.enter();
+            return false;
+        }
+        detail(now, entry, recent);
     } else {
         uint16_t ordered[Ble::Scanner::kCapacity + 1];
         uint8_t count = scanner_.namedList(ordered, now, selected_);
@@ -166,7 +183,8 @@ void BleNearbyScreen::detail(uint32_t now, const Ble::Observation *entry, Ble::R
     }
     snprintf(lines_[2].text, sizeof(lines_[2].text), "Last seen %lus%s",
              static_cast<unsigned long>(fresh ? age / 1000 : Ble::kRecentMs / 1000), fresh ? "" : "+");
-    draw(entry == nullptr ? "UNNAMED" : "DEVICE", "", secondary);
+    const bool desk = entry && entry->lab && !strcmp(entry->name, "TD-B01");
+    draw(desk ? "WALK-AWAY" : entry == nullptr ? "UNNAMED" : "DEVICE", desk ? "OPEN" : "", secondary);
 }
 
 void BleNearbyScreen::arrows() {

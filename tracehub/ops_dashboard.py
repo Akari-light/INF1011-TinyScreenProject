@@ -1,4 +1,4 @@
-from flask import Blueprint, abort, current_app, render_template, request
+from flask import Blueprint, abort, current_app, render_template, request, send_file
 
 from . import database
 
@@ -6,7 +6,19 @@ from . import database
 dashboard_blueprint = Blueprint("dashboard", __name__)
 
 
-@dashboard_blueprint.before_app_request
+@dashboard_blueprint.get("/loot/<uuid:loot_id>/archive")
+def download_loot_archive(loot_id):
+    database_path = current_app.config["DATABASE_PATH"]
+    archive = database.find_loot_archive(database_path, str(loot_id))
+    if archive is None or archive[0] is None:
+        abort(404)
+    archive_path = database_path.parent / "archives" / f"{archive[0]}.zip"
+    if not archive_path.is_file():
+        abort(404)
+    return send_file(archive_path, as_attachment=True, download_name="Test_Important.zip")
+
+
+@dashboard_blueprint.before_request
 def require_local_operator():
     if request.remote_addr != "127.0.0.1":
         abort(403)

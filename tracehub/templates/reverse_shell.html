@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>TraceHub — Reverse Shell Console</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    [hidden] { display: none !important; }
+    html, body { height: 100%; margin: 0; }
+    body { display: flex; flex-direction: column; background: #0b0f14; color: #c8d3dc; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+    .topbar { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.6rem; background: #0d141a; border-bottom: 1px solid #2a3a45; }
+    .back { color: #6b7a86; text-decoration: none; font-size: 1.1rem; padding: 0.25rem 0.4rem; }
+    .back:hover { color: #32e4f6; }
+    .tabbar { display: flex; align-items: flex-end; gap: 2px; flex: 1; overflow-x: auto; min-width: 0; }
+    .tab { display: flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.6rem; cursor: pointer; color: #6b7a86; border: 1px solid transparent; border-bottom: none; border-radius: 6px 6px 0 0; white-space: nowrap; }
+    .tab:hover { color: #c8d3dc; }
+    .tab.active { background: #05070a; color: #c8d3dc; border-color: #2a3a45; }
+    .tab.closed .name { text-decoration: line-through; opacity: 0.7; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto; }
+    .dot.live { background: #32e4f6; box-shadow: 0 0 5px #32e4f6; }
+    .dot.dead { background: #6b7a86; }
+    .name { outline: none; }
+    .name[contenteditable="true"] { background: #0b0f14; border: 1px solid #32e4f6; border-radius: 3px; padding: 0 0.2rem; color: #c8d3dc; user-select: text; }
+    .tab-close { background: none; border: none; color: #6b7a86; cursor: pointer; font-size: 1rem; line-height: 1; padding: 0 0.2rem; }
+    .tab-close:hover { color: #ff6f80; }
+    .tab-edit { background: none; border: none; color: #6b7a86; cursor: pointer; font-size: 0.85rem; line-height: 1; padding: 0 0.15rem; }
+    .tab-edit:hover { color: #32e4f6; }
+    #clear-closed { background: #1a2a36; color: #ffbb46; border: 1px solid #2a3a45; padding: 0.35rem 0.6rem; cursor: pointer; border-radius: 4px; white-space: nowrap; }
+    #clear-closed:hover { border-color: #ffbb46; }
+    .terminal { flex: 1; display: flex; flex-direction: column; background: #05070a; min-height: 0; }
+    .out { flex: 1; margin: 0; padding: 0.75rem; overflow: auto; white-space: pre-wrap; word-break: break-word; color: #c8d3dc; font-size: 0.9rem; }
+    .cmdline { display: flex; align-items: center; gap: 0.4rem; padding: 0.5rem 0.75rem; border-top: 1px solid #2a3a45; background: #0d141a; }
+    .prompt { color: #32e4f6; }
+    .cmdline input { flex: 1; background: transparent; border: none; outline: none; color: #c8d3dc; font: inherit; }
+    .cmdline input::placeholder { color: #4a5a66; }
+    .closed-note { padding: 0.5rem 0.75rem; border-top: 1px solid #2a3a45; background: #0d141a; color: #6b7a86; }
+    .empty { color: #6b7a86; padding: 1rem; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="back" href="{{ url_for('dashboard.show_dashboard') }}" title="Back to Ops Console">←</a>
+    <div id="tabbar" class="tabbar"></div>
+    <button id="clear-closed" type="button" title="Remove closed shells">Clear closed</button>
+  </div>
+  <main id="terminal" class="terminal" hidden>
+    <pre id="out" class="out"></pre>
+    <form id="cmd" class="cmdline">
+      <span class="prompt">&gt;</span>
+      <input id="cmd-input" name="command" type="text" autocomplete="off" spellcheck="false" placeholder="type a command, Enter to run">
+    </form>
+    <div id="closed-note" class="closed-note" hidden>shell closed</div>
+  </main>
+  <p id="empty" class="empty">Waiting for a connection — fire the Pwning payload and a tab will appear here.</p>
+
+  <script>
+    const STATE_URL = {{ url_for('reverse_shell.shell_state')|tojson }};
+    const CLEAR_URL = {{ url_for('reverse_shell.shell_clear_closed')|tojson }};
+    const SEND_TMPL = {{ url_for('reverse_shell.shell_send', session_id=0)|tojson }};
+    const CLOSE_TMPL = {{ url_for('reverse_shell.shell_close', session_id=0)|tojson }};
+    const RENAME_TMPL = {{ url_for('reverse_shell.shell_rename', session_id=0)|tojson }};
+    const sendUrl = id => SEND_TMPL.replace('/0/', '/' + id + '/');
+    const closeUrl = id => CLOSE_TMPL.replace('/0/', '/' + id + '/');
+    const renameUrl = id => RENAME_TMPL.replace('/0/', '/' + id + '/');
+
+    const state = new Map();   // id -> { s, history, historyIdx, autoScroll, lastText }
+    const tabEls = new Map();  // id -> tab element
+    let activeId = null;
+    let renderedId = null;
+
+    const tabbar = document.getElementById('tabbar');
+    const terminal = document.getElementById('terminal');
+    const outEl = document.getElementById('out');
+    const cmdForm = document.getElementById('cmd');
+    const cmdInput = document.getElementById('cmd-input');
+    const closedNote = document.getElementById('closed-note');
+    const emptyEl = document.getElementById('empty');
+
+    function stepHistory(rec, dir) {
+      if (!rec.history.length) return;
+      rec.historyIdx += dir;
+      if (rec.historyIdx < 0) rec.historyIdx = 0;
+      if (rec.historyIdx > rec.history.length) rec.historyIdx = rec.history.length;
+      cmdInput.value = rec.historyIdx < rec.history.length ? rec.history[rec.historyIdx] : '';
+    }
+
+    function beginRename(id) {
+      const tab = tabEls.get(id);
+      if (!tab) return;
+      const nameEl = tab.querySelector('.name');
+      nameEl.contentEditable = 'true';
+      nameEl.focus();
+      const range = document.createRange();
+      range.selectNodeContents(nameEl);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      let finished = false;
+      const finish = async (save) => {
+        if (finished) return;
+        finished = true;
+        nameEl.contentEditable = 'false';
+        const name = nameEl.textContent.trim().slice(0, 32);
+        if (save && name) {
+          const fd = new FormData();
+          fd.append('name', name);
+          try { await fetch(renameUrl(id), { method: 'POST', body: fd }); } catch (e) {}
+        }
+        poll();
+      };
+      nameEl.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+        else if (e.key === 'Escape') { finish(false); }
+      });
+      nameEl.addEventListener('blur', () => finish(true));
+    }
+
+    function createTab(id) {
+      const tab = document.createElement('div');
+      tab.className = 'tab';
+      tab.dataset.sessionId = id;
+
+      const dot = document.createElement('span');
+      dot.className = 'dot';
+      const name = document.createElement('span');
+      name.className = 'name';
+      name.title = 'double-click to rename';
+      const edit = document.createElement('button');
+      edit.className = 'tab-edit';
+      edit.type = 'button';
+      edit.textContent = '✎';
+      edit.title = 'Rename shell';
+      const close = document.createElement('button');
+      close.className = 'tab-close';
+      close.type = 'button';
+      close.textContent = '×';
+      close.title = 'Close shell';
+
+      tab.append(dot, name, edit, close);
+      tabbar.appendChild(tab);
+      tabEls.set(id, tab);
+
+      tab.addEventListener('click', e => {
+        if (e.target === close || e.target === edit) return;
+        if (e.target.classList.contains('name') && e.target.contentEditable === 'true') return;
+        activeId = id;
+        renderedId = null;
+        renderTabs();
+        renderTerminal();
+      });
+
+      close.addEventListener('click', async () => {
+        try { await fetch(closeUrl(id), { method: 'POST' }); } catch (e) {}
+        poll();
+      });
+
+      edit.addEventListener('click', () => beginRename(id));
+      name.addEventListener('dblclick', () => beginRename(id));
+      return tab;
+    }
+
+    function updateTab(id) {
+      const rec = state.get(id);
+      const tab = tabEls.get(id);
+      const s = rec.s;
+      tab.classList.toggle('active', s.id === activeId);
+      tab.classList.toggle('closed', !s.active);
+      const dot = tab.querySelector('.dot');
+      dot.className = 'dot ' + (s.active ? 'live' : 'dead');
+      const name = tab.querySelector('.name');
+      if (name.contentEditable !== 'true') {
+        name.textContent = s.name || ('shell #' + s.id);
+      }
+    }
+
+    function renderTabs() {
+      const seen = new Set();
+      for (const id of state.keys()) {
+        seen.add(id);
+        if (!tabEls.has(id)) createTab(id);
+        updateTab(id);
+      }
+      for (const [id, tab] of tabEls) {
+        if (!seen.has(id)) { tab.remove(); tabEls.delete(id); }
+      }
+    }
+
+    function renderTerminal() {
+      const rec = activeId != null ? state.get(activeId) : null;
+      terminal.hidden = !rec;
+      emptyEl.hidden = !!rec;
+      if (!rec) { renderedId = null; return; }
+
+      const live = rec.s.active;
+      cmdForm.hidden = !live;
+      closedNote.hidden = live;
+
+      if (renderedId !== activeId) {
+        renderedId = activeId;
+        rec.lastText = rec.s.text;
+        outEl.textContent = rec.s.text;
+        outEl.scrollTop = outEl.scrollHeight;
+        if (live) { cmdInput.value = ''; cmdInput.focus(); }
+      } else if (rec.s.text !== rec.lastText) {
+        rec.lastText = rec.s.text;
+        outEl.textContent = rec.s.text;
+        if (rec.autoScroll) outEl.scrollTop = outEl.scrollHeight;
+      }
+    }
+
+    async function poll() {
+      try {
+        const resp = await fetch(STATE_URL, { cache: 'no-store' });
+        const data = await resp.json();
+        const existing = new Set(state.keys());
+        let newLive = null;
+        for (const s of data.sessions) {
+          if (!state.has(s.id)) {
+            state.set(s.id, { s, history: [], historyIdx: -1, autoScroll: true, lastText: '' });
+            if (s.active) newLive = s.id;
+          } else {
+            state.get(s.id).s = s;
+          }
+        }
+        for (const id of existing) {
+          if (!data.sessions.some(x => x.id === id)) state.delete(id);
+        }
+        if (newLive != null) activeId = newLive;
+        if (activeId == null || !state.has(activeId)) {
+          const firstLive = data.sessions.find(x => x.active);
+          activeId = firstLive ? firstLive.id : (data.sessions.length ? data.sessions[0].id : null);
+        }
+        renderTabs();
+        renderTerminal();
+      } catch (e) { /* keep last state */ }
+    }
+
+    cmdForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      const rec = activeId != null ? state.get(activeId) : null;
+      if (!rec || !rec.s.active) return;
+      const cmd = cmdInput.value.trim();
+      if (!cmd) return;
+      rec.history.push(cmd);
+      rec.historyIdx = rec.history.length;
+      const fd = new FormData();
+      fd.append('command', cmd);
+      cmdInput.value = '';
+      try { await fetch(sendUrl(activeId), { method: 'POST', body: fd }); } catch (e) {}
+      cmdInput.focus();
+      poll();
+    });
+
+    cmdInput.addEventListener('keydown', e => {
+      const rec = activeId != null ? state.get(activeId) : null;
+      if (!rec) return;
+      if (e.key === 'ArrowUp') { e.preventDefault(); stepHistory(rec, -1); }
+      else if (e.key === 'ArrowDown') { e.preventDefault(); stepHistory(rec, 1); }
+    });
+
+    outEl.addEventListener('scroll', () => {
+      const rec = activeId != null ? state.get(activeId) : null;
+      if (rec) rec.autoScroll = outEl.scrollTop + outEl.clientHeight >= outEl.scrollHeight - 8;
+    });
+
+    document.getElementById('clear-closed').addEventListener('click', async () => {
+      try { await fetch(CLEAR_URL, { method: 'POST' }); } catch (e) {}
+      poll();
+    });
+
+    poll();
+    setInterval(poll, 1000);
+  </script>
+</body>
+</html>

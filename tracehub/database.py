@@ -38,6 +38,8 @@ def initialize_database(database_path):
             connection.execute("ALTER TABLE loot ADD COLUMN filename TEXT")
         if "file_size_bytes" not in loot_columns:
             connection.execute("ALTER TABLE loot ADD COLUMN file_size_bytes INTEGER")
+        if "archive_sha256" not in loot_columns:
+            connection.execute("ALTER TABLE loot ADD COLUMN archive_sha256 TEXT")
 
         connection.execute("""
             CREATE TABLE IF NOT EXISTS iot_results (
@@ -58,7 +60,7 @@ def initialize_database(database_path):
 def record_loot(
     database_path, *,
     helper_id, submission_id, reported_hostname, observed_peer_ip, file_text,
-    filename, file_size_bytes,
+    filename, file_size_bytes, archive_sha256=None,
 ):
     loot_id = str(uuid4())
     received_at = datetime.now(timezone.utc).isoformat(timespec="milliseconds")
@@ -68,18 +70,18 @@ def record_loot(
             """
             INSERT INTO loot (
                 loot_id, helper_id, submission_id, reported_hostname,
-                observed_peer_ip, message, filename, file_size_bytes, received_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                observed_peer_ip, message, filename, file_size_bytes, received_at, archive_sha256
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT (helper_id, submission_id) DO NOTHING
             """,
             (
                 loot_id, helper_id, submission_id, reported_hostname,
-                observed_peer_ip, file_text, filename, file_size_bytes, received_at,
+                observed_peer_ip, file_text, filename, file_size_bytes, received_at, archive_sha256,
             ),
         )
         loot_entry = connection.execute(
             """
-            SELECT loot_id, reported_hostname, message AS file_text, filename, file_size_bytes
+            SELECT loot_id, reported_hostname, message AS file_text, filename, file_size_bytes, archive_sha256
             FROM loot
             WHERE helper_id = ? AND submission_id = ?
             """,
@@ -129,10 +131,17 @@ def read_loot_log(database_path, *, query, hostname_status, sort):
         matching = connection.execute(f"SELECT COUNT(*) FROM loot {where}", params).fetchone()[0]
         entries = connection.execute(f"""
             SELECT loot_id, helper_id, reported_hostname AS hostname, observed_peer_ip,
-                   message AS file_text, filename, file_size_bytes, received_at
+                   message AS file_text, filename, file_size_bytes, received_at, archive_sha256
             FROM loot {where} ORDER BY {order} LIMIT 50
         """, params).fetchall()
     return inventory, latest, matching, entries
+
+
+def find_loot_archive(database_path, loot_id):
+    with closing(sqlite3.connect(database_path)) as connection:
+        return connection.execute(
+            "SELECT archive_sha256 FROM loot WHERE loot_id = ?", (loot_id,)
+        ).fetchone()
 
 
 # def record_iot_result(

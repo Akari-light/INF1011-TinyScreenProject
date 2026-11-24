@@ -229,6 +229,15 @@ const Observation *Scanner::find(uint16_t number) const {
     return nullptr;
 }
 
+const Observation *Scanner::deskBeacon(uint32_t now) const {
+    const Observation *latest = nullptr;
+    for (const auto &entry : entries_) {
+        if (entry.lab && strcmp(entry.name, "TD-B01") == 0 &&
+            (!latest || now - entry.seenAt < now - latest->seenAt)) latest = &entry;
+    }
+    return latest;
+}
+
 RecentAddresses Scanner::recent(uint32_t now) const {
     RecentAddresses result;
     for (const Observation &entry : entries_) {
