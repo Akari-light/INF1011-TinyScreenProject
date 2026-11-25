@@ -147,8 +147,8 @@ namespace{
 void sendDropUploadKeys(const BadUsbProgress &progress)
 {
     // Comment out BOTH lines below to enable this payload.
-    // showDisabledPayload(progress);
-    // return;
+    showDisabledPayload(progress);
+    return;
     
     const bool uploadEnabled = kTraceHubUploadUrl[0] != '\0';
     TimedProgress timing{progress, kNotepadTotalWaitMs + (uploadEnabled ? kUploadTotalWaitMs : 0), 0};

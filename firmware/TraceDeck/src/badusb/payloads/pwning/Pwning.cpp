@@ -69,8 +69,8 @@ namespace {
 void sendPwningKeys(const BadUsbProgress &progress)
 {
     // Comment out BOTH lines below to disable this payload.
-    // showDisabledPayload(progress);
-    // return;
+    showDisabledPayload(progress);
+    return;
 
     TimedProgress timing{progress, kTotalMs, 0};
     Keyboard.begin(KeyboardLayout_en_US);
