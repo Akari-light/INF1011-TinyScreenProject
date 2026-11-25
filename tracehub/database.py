@@ -41,19 +41,6 @@ def initialize_database(database_path):
         if "archive_sha256" not in loot_columns:
             connection.execute("ALTER TABLE loot ADD COLUMN archive_sha256 TEXT")
 
-        connection.execute("""
-            CREATE TABLE IF NOT EXISTS iot_results (
-                sequence INTEGER PRIMARY KEY,
-                result_id TEXT NOT NULL UNIQUE,
-                device_id TEXT NOT NULL,
-                request_id TEXT NOT NULL,
-                observed_peer_ip TEXT NOT NULL,
-                action TEXT NOT NULL,
-                result TEXT NOT NULL,
-                received_at TEXT NOT NULL,
-                UNIQUE (device_id, request_id)
-            )
-        """)
         connection.commit()
 
 
@@ -142,47 +129,3 @@ def find_loot_archive(database_path, loot_id):
         return connection.execute(
             "SELECT archive_sha256 FROM loot WHERE loot_id = ?", (loot_id,)
         ).fetchone()
-
-
-# def record_iot_result(
-#     database_path, *,
-#     device_id, request_id, observed_peer_ip, action, result,
-# ):
-#     result_id = str(uuid4())
-#     received_at = datetime.now(timezone.utc).isoformat(timespec="milliseconds")
-#     with closing(sqlite3.connect(database_path)) as connection:
-#         connection.row_factory = sqlite3.Row
-#         insert_result = connection.execute(
-#             """
-#             INSERT INTO iot_results (
-#                 result_id, device_id, request_id, observed_peer_ip,
-#                 action, result, received_at
-#             ) VALUES (?, ?, ?, ?, ?, ?, ?)
-#             ON CONFLICT (device_id, request_id) DO NOTHING
-#             """,
-#             (
-#                 result_id, device_id, request_id, observed_peer_ip,
-#                 action, result, received_at,
-#             ),
-#         )
-#         iot_result = connection.execute(
-#             """
-#             SELECT result_id, device_id, request_id, observed_peer_ip,
-#                    action, result, received_at
-#             FROM iot_results WHERE device_id = ? AND request_id = ?
-#             """,
-#             (device_id, request_id),
-#         ).fetchone()
-#         result_created = insert_result.rowcount == 1
-#         connection.commit()
-#     return iot_result, result_created
-
-
-# def list_iot_results(database_path):
-#     with closing(sqlite3.connect(database_path)) as connection:
-#         connection.row_factory = sqlite3.Row
-#         return connection.execute("""
-#             SELECT result_id, device_id, request_id, observed_peer_ip,
-#                    action, result, received_at
-#             FROM iot_results ORDER BY sequence DESC LIMIT 50
-#         """).fetchall()
