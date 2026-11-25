@@ -1,6 +1,6 @@
 # TraceDeck
 
-TraceDeck is an ICT1011 security lab for owned equipment on an isolated network. Its handheld menu opens **Drop & Upload** and **Bluetooth**. Drop & Upload saves a Desktop message, closes Notepad, and uses built-in PowerShell to upload a ZIP of the prepared dummy folder. The **TraceHub server** stores the archive and displays its text in the Ops Console. BLE Nearby shows legacy Bluetooth LE advertisements on the TinyScreen+ OLED.
+TraceDeck is an ICT1011 security lab for owned equipment on an isolated network. Home opens the **BadUSB** and **Bluetooth** menus. Drop & Upload saves a Desktop message, closes Notepad, and uses built-in PowerShell to upload a ZIP of the prepared dummy folder. The **TraceHub server** stores the archive and displays its text in the Ops Console. BLE Nearby shows legacy Bluetooth LE advertisements on the TinyScreen+ OLED.
 
 See [PROJECT_PLAN.md](PROJECT_PLAN.md) for the roadmap and test status.
 
@@ -16,7 +16,7 @@ See [PROJECT_PLAN.md](PROJECT_PLAN.md) for the roadmap and test status.
 
 ## Set up the TraceHub server
 
-On the server, use a checkout with the redesigned TraceHub console (`main` at `4949912` or later). Open PowerShell in the repository root and install the dependencies once.
+On the server, open PowerShell in the repository root and install the dependencies once.
 
 ```powershell
 $traceDeckEnvironment = Join-Path $env:LOCALAPPDATA 'TraceDeck\venv'
@@ -32,7 +32,7 @@ $traceDeckPython = Join-Path $env:LOCALAPPDATA 'TraceDeck\venv\Scripts\python.ex
 & $traceDeckPython -m flask --app tracehub --no-debug run --host 127.0.0.1
 ```
 
-On the server, open `http://127.0.0.1:5000`. The workspace navigation opens the Loot Log or Reverse Shell console. The overview summarizes captures, source IPs, identified hosts, and known upload sizes. Search, filter by hostname status, or order captures newest or oldest first, then open a row for the full file text and metadata. The log shows up to 50 matches and refreshes every two seconds.
+On the server, open `http://127.0.0.1:5000`. The workspace navigation opens the Loot Log, Walk-away audit, or Reverse Shell console. The overview summarizes captures, source IPs, identified hosts, and known upload sizes. Search, filter by hostname status, or order captures newest or oldest first, then open a row for the full file text and metadata. The log shows up to 50 matches and refreshes every two seconds.
 
 ### Browser upload listener
 
@@ -46,9 +46,9 @@ $traceHubServerIp = Read-Host 'TraceHub server private IPv4 address'
 
 The upload build sends `Test_Important.zip` to `http://<server-ip>:8080/badusb/upload`. The page also accepts a manual ZIP selection. ZIP entries must be inside `Test_Important`. The request limit is 8 MiB, with at most 100 archive entries and 16 MiB of expanded data. TraceHub saves text previews and metadata in SQLite and keeps the original ZIP under `%LOCALAPPDATA%\TraceDeck\archives`. Open a Loot Log row and select **Download ZIP folder** to save the original folder on your PC, including PDFs, Word documents, and other files. Text is shown in the preview. Other document types show a download notice. TraceHub records the observed source IP and receipt time.
 
-PowerShell prints the loot ID after TraceHub saves the ZIP and database row, then deletes the temporary ZIP on the target. On failure, it keeps the temporary ZIP and prints its path. The original `Documents\Test_Important` folder stays on the target. Restart the upload listener and dashboard after updating this code so both use the added archive metadata column.
+PowerShell prints the loot ID after TraceHub saves the ZIP and database row, then deletes the temporary ZIP on the target. On failure, it keeps the temporary ZIP and prints its path. The original `Documents\Test_Important` folder stays on the target. TraceHub automatically adds archive metadata support when it opens an older receipts database.
 
-Expand a Loot Log entry to see image previews from its saved ZIP. JPG/JPEG, PNG, GIF, and WebP images appear below the text preview with their archive filenames. Click an image to open it in a new tab. Previews also work for earlier uploads whose original ZIP is still stored. Restart the dashboard and refresh the browser after updating the preview code.
+Expand a Loot Log entry to see image previews from its saved ZIP. JPG/JPEG, PNG, GIF, and WebP images appear below the text preview with their archive filenames. Click an image to open it in a new tab. Previews also work for earlier uploads whose original ZIP is still stored.
 
 The listeners share `%LOCALAPPDATA%\TraceDeck\tracehub.sqlite3`. To start with an empty console, stop all TraceHub listeners and rename the database to a backup. TraceHub creates a new database on restart.
 
@@ -114,7 +114,7 @@ $traceDeckPort = Read-Host 'TinyScreen+ COM port'
 arduino-cli compile --fqbn TinyCircuits:samd:tinyscreen --port $traceDeckPort --upload .\firmware\TraceDeck
 ```
 
-For the upload build, enter the server IP used for the browser listener. Use the command below for the current firmware. If you build firmware from `4949912`, use its compile flag `TRACEHUB_PC1_IP` in place of `TRACEHUB_SERVER_IP`. Keep the configured firmware image local.
+For the upload build, enter the server IP used for the browser listener. Use the command below for the current firmware. Keep the configured firmware image local.
 
 ```powershell
 $traceHubServerIp = Read-Host 'TraceHub server private IPv4 address'
