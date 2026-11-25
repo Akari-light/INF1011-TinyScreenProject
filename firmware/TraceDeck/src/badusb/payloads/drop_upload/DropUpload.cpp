@@ -111,7 +111,7 @@ namespace{
             "$lootId=[guid]::Parse($saved.loot_id); "
             "if($lootId -eq [guid]::Empty){throw 'Missing loot ID'}; "
             "Remove-Item -LiteralPath $zip; Remove-Item -LiteralPath $temporary; "
-            "Write-Host ('Saved loot '+$lootId+'; temporary ZIP deleted') -ForegroundColor Green "
+            "Write-Host ('Saved loot '+$lootId+'; temporary ZIP deleted') -ForegroundColor Green; exit 0 "
             "} catch { Write-Host $_ -ForegroundColor Red; Write-Host ('ZIP retained if created: '+$zip) "
             "} finally { $form.Dispose(); $client.Dispose() }"
         );

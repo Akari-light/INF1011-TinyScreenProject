@@ -48,8 +48,9 @@ def initialize_database(database_path):
 def record_loot(
     database_path, *,
     helper_id, submission_id, reported_hostname, observed_peer_ip, file_text,
-    filename, file_size_bytes, archive_sha256=None,
+    filename, file_size_bytes, archive_sha256=None, before_commit=None,
 ):
+    """Record or reuse a submission, optionally checking it before committing."""
     loot_id = str(uuid4())
     received_at = datetime.now(timezone.utc).isoformat(timespec="milliseconds")
     with closing(sqlite3.connect(database_path)) as connection:
@@ -76,6 +77,8 @@ def record_loot(
             (helper_id, submission_id),
         ).fetchone()
         loot_created = insert_result.rowcount == 1
+        if before_commit is not None:
+            before_commit(loot_entry)
         connection.commit()
     return loot_entry, loot_created
 

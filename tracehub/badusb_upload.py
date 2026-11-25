@@ -90,32 +90,25 @@ def receive_badusb_upload():
 
     manifest = "\n\n".join(f"### {path}\n{text}" for path, text in parts)
 
-    # Save the original upload atomically before acknowledging its database record.
     archive_sha256 = sha256(uploaded_bytes).hexdigest()
-    archive_directory = current_app.config["DATABASE_PATH"].parent / "archives"
-    archive_directory.mkdir(parents=True, exist_ok=True)
+    database_path = current_app.config["DATABASE_PATH"]
     stored_suffix = database.archive_suffix(safe_name)
-    with NamedTemporaryFile(dir=archive_directory, suffix=".tmp", delete=False) as temporary_archive:
-        temporary_path = temporary_archive.name
-        try:
-            temporary_archive.write(uploaded_bytes)
-            temporary_archive.flush()
-            os.fsync(temporary_archive.fileno())
-        except BaseException:
-            temporary_archive.close()
-            os.unlink(temporary_path)
-            raise
-    try:
-        os.link(temporary_path, archive_directory / f"{archive_sha256}{stored_suffix}")
-    except FileExistsError:
-        # Identical retries share the immutable original archive.
-        pass
-    finally:
-        if os.path.exists(temporary_path):
-            os.unlink(temporary_path)
+
+    def save_matching_upload(loot_entry):
+        # The database holds its write transaction while we check the ID and save the file.
+        if (
+            loot_entry["file_text"] != manifest
+            or loot_entry["filename"] != safe_name
+            or loot_entry["file_size_bytes"] != len(uploaded_bytes)
+            or loot_entry["archive_sha256"] != archive_sha256
+        ):
+            abort(409, "This form already saved a different upload. Open a fresh form.")
+
+        archive_path = database_path.parent / "archives" / f"{archive_sha256}{stored_suffix}"
+        save_original_upload(archive_path, uploaded_bytes)
 
     loot_entry, loot_created = database.record_loot(
-        current_app.config["DATABASE_PATH"],
+        database_path,
         helper_id="",
         submission_id=submission_id,
         reported_hostname="",
@@ -124,14 +117,8 @@ def receive_badusb_upload():
         filename=safe_name,
         file_size_bytes=len(uploaded_bytes),
         archive_sha256=archive_sha256,
+        before_commit=save_matching_upload,
     )
-    if (
-        loot_entry["file_text"] != manifest
-        or loot_entry["filename"] != safe_name
-        or loot_entry["file_size_bytes"] != len(uploaded_bytes)
-        or loot_entry["archive_sha256"] != archive_sha256
-    ):
-        abort(409, "This form already saved a different upload. Open a fresh form.")
 
     if request.accept_mimetypes.best == "application/json":
         return {"loot_id": loot_entry["loot_id"]}, 201 if loot_created else 200
@@ -140,3 +127,26 @@ def receive_badusb_upload():
         render_template("badusb_upload.html", loot_id=loot_entry["loot_id"]),
         201 if loot_created else 200,
     )
+
+
+def save_original_upload(archive_path, uploaded_bytes):
+    if archive_path.is_file():
+        return
+
+    archive_path.parent.mkdir(parents=True, exist_ok=True)
+    temporary_path = None
+    try:
+        with NamedTemporaryFile(dir=archive_path.parent, suffix=".tmp", delete=False) as temporary_archive:
+            temporary_path = temporary_archive.name
+            temporary_archive.write(uploaded_bytes)
+            temporary_archive.flush()
+            os.fsync(temporary_archive.fileno())
+        try:
+            os.link(temporary_path, archive_path)
+        except FileExistsError:
+            # The original is content-addressed, so a concurrent save can reuse it.
+            if not archive_path.is_file():
+                raise
+    finally:
+        if temporary_path is not None:
+            os.unlink(temporary_path)
