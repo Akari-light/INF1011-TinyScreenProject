@@ -12,18 +12,18 @@
         <p>Saved loot <code>{{ loot_id }}</code>.</p>
         <p><a href="{{ url_for('badusb_upload.show_badusb_upload') }}">Open a new upload form</a></p>
         {% else %}
-        <p>Select <code>Test_Important.zip</code> to upload the prepared dummy files.</p>
+        <p>Select a file (ZIP archive or plain text dump) to upload it to the Loot Log.</p>
         <form method="post" enctype="multipart/form-data"
               action="{{ url_for('badusb_upload.receive_badusb_upload') }}">
             <input type="hidden" name="submission_id" value="{{ submission_id }}">
-            <label for="demo-archive">Demo ZIP</label>
-            <input id="demo-archive" type="file" name="file" accept=".zip" autofocus required>
-            <button type="submit">Upload ZIP</button>
+            <label for="demo-archive">File</label>
+            <input id="demo-archive" type="file" name="file" accept=".zip,.txt,.log,.json,.md,.csv,.yaml,.yml" autofocus required>
+            <button type="submit">Upload</button>
         </form>
         <script>
             const archiveInput = document.getElementById("demo-archive");
             archiveInput.addEventListener("change", () => {
-                if (archiveInput.files[0]?.name === "Test_Important.zip") {
+                if (archiveInput.files[0]) {
                     archiveInput.form.requestSubmit();
                 }
             });

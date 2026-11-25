@@ -1,6 +1,7 @@
 import sqlite3
 from contextlib import closing
 from datetime import datetime, timezone
+from pathlib import PurePosixPath
 from uuid import uuid4
 
 # SQLite schema and queries for TraceHub
@@ -124,8 +125,18 @@ def read_loot_log(database_path, *, query, hostname_status, sort):
     return inventory, latest, matching, entries
 
 
+ARCHIVE_SUFFIXES = {".zip", ".txt", ".log", ".json", ".md", ".csv", ".yaml", ".yml"}
+
+
+def archive_suffix(filename):
+    if not filename:
+        return ".bin"
+    suffix = PurePosixPath(filename).suffix.lower()
+    return suffix if suffix in ARCHIVE_SUFFIXES else ".bin"
+
+
 def find_loot_archive(database_path, loot_id):
     with closing(sqlite3.connect(database_path)) as connection:
         return connection.execute(
-            "SELECT archive_sha256 FROM loot WHERE loot_id = ?", (loot_id,)
+            "SELECT archive_sha256, filename FROM loot WHERE loot_id = ?", (loot_id,)
         ).fetchone()

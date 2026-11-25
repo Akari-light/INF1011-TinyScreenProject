@@ -120,7 +120,7 @@
                                         <dt>Filename</dt><dd><code>{{ entry.filename or 'Unavailable' }}</code></dd>
                                         <dt>Upload size</dt><dd>{{ (entry.file_size_bytes ~ ' bytes') if entry.file_size_bytes is not none else 'Unavailable' }}</dd>
                                         {% if entry.archive_sha256 %}
-                                        <dt>Original files</dt><dd><a href="{{ url_for('dashboard.download_loot_archive', loot_id=entry.loot_id) }}">Download ZIP folder</a></dd>
+                                        <dt>Original files</dt><dd><a href="{{ url_for('dashboard.download_loot_archive', loot_id=entry.loot_id) }}">Download original files</a></dd>
                                         {% endif %}
                                         {% if entry.helper_id %}
                                         <dt>Helper ID</dt><dd>{{ entry.helper_id }}</dd>

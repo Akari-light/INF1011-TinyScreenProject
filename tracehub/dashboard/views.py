@@ -23,7 +23,7 @@ def show_loot_image(loot_id, entry_index):
     archive_record = database.find_loot_archive(database_path, str(loot_id))
     if archive_record is None or archive_record[0] is None:
         abort(404)
-    archive_path = database_path.parent / "archives" / f"{archive_record[0]}.zip"
+    archive_path = database_path.parent / "archives" / f"{archive_record[0]}{database.archive_suffix(archive_record[1])}"
     try:
         with ZipFile(archive_path) as archive:
             entries = archive.infolist()
@@ -58,10 +58,10 @@ def download_loot_archive(loot_id):
     archive = database.find_loot_archive(database_path, str(loot_id))
     if archive is None or archive[0] is None:
         abort(404)
-    archive_path = database_path.parent / "archives" / f"{archive[0]}.zip"
+    archive_path = database_path.parent / "archives" / f"{archive[0]}{database.archive_suffix(archive[1])}"
     if not archive_path.is_file():
         abort(404)
-    return send_file(archive_path, as_attachment=True, download_name="Test_Important.zip")
+    return send_file(archive_path, as_attachment=True, download_name=archive[1] or "upload")
 
 
 @dashboard_blueprint.before_request
@@ -89,7 +89,7 @@ def show_dashboard():
     for entry in entries:
         if not entry["archive_sha256"]:
             continue
-        archive_path = current_app.config["DATABASE_PATH"].parent / "archives" / f"{entry['archive_sha256']}.zip"
+        archive_path = current_app.config["DATABASE_PATH"].parent / "archives" / f"{entry['archive_sha256']}{database.archive_suffix(entry['filename'])}"
         try:
             with ZipFile(archive_path) as archive:
                 image_entries[entry["loot_id"]] = [
