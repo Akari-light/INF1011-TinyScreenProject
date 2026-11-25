@@ -50,8 +50,6 @@ public:
     bool running() const { return running_; }
     int status() const { return status_; }
     const char *stage() const { return stage_; }
-    uint8_t hardware() const { return hardware_; }
-    uint16_t firmware() const { return firmware_; }
     uint32_t reports() const { return reports_; }
     uint32_t invalidEvents() const { return invalid_; }
     bool saturated(uint32_t now) const { return saturated_ && now - overflowAt_ < kRecentMs; }
@@ -70,8 +68,6 @@ private:
     Observation entries_[kCapacity] = {};
     uint16_t nextNumber_ = 0;
     uint16_t protectedNumber_ = 0;
-    uint16_t firmware_ = 0;
-    uint8_t hardware_ = 0;
     uint32_t restartAt_ = 0, reports_ = 0, invalid_ = 0, overflowAt_ = 0;
     int status_ = 0;
     bool running_ = false, observerReady_ = false, saturated_ = false;

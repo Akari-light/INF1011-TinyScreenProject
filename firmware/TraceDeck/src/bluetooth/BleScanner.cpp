@@ -81,7 +81,7 @@ namespace Ble {
 
 void Scanner::begin() {
     memset(entries_, 0, sizeof(entries_));
-    nextNumber_ = protectedNumber_ = firmware_ = hardware_ = 0;
+    nextNumber_ = protectedNumber_ = 0;
     restartAt_ = reports_ = invalid_ = overflowAt_ = 0;
     observerReady_ = saturated_ = false;
     activeScanner = this;
@@ -90,7 +90,9 @@ void Scanner::begin() {
     BNRG_SPI_Init();
     BlueNRG_RST();
     delay(100);
-    status_ = getBlueNRGVersion(&hardware_, &firmware_);
+    uint8_t hardwareVersion = 0;
+    uint16_t firmwareVersion = 0;
+    status_ = getBlueNRGVersion(&hardwareVersion, &firmwareVersion);
     if (status_ == BLE_STATUS_SUCCESS) {
         stage_ = "GATT setup";
         status_ = aci_gatt_init();
