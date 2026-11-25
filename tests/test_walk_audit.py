@@ -10,7 +10,7 @@ from unittest.mock import Mock, patch
 from uuid import uuid4
 
 from tracehub import create_app
-from tracehub.walk_trials import evaluate, recent, save
+from tracehub.walk.trials import evaluate, recent, save
 
 
 def fixture(lock=None):
@@ -59,7 +59,7 @@ class WalkTests(TestCase):
         self.assertEqual(evaluate(t)["status"], "Lock observed")
 
     def test_wrong_trial_or_delayed_serial_reply_is_ignored(self):
-        from tracehub.walk_capture import exchange
+        from tracehub.walk.capture import exchange
         trial = uuid4().hex
         port = Mock()
         port.readline.side_effect = [
@@ -67,7 +67,7 @@ class WalkTests(TestCase):
             f"WA1 {trial} deadbeef ARMED 600 0 0 127\n".encode(),
             f"WA1 {trial} 1234abcd MARKED 700 660 12 -55\n".encode(),
         ]
-        with patch("tracehub.walk_capture.secrets.token_hex", return_value="1234abcd"):
+        with patch("tracehub.walk.capture.secrets.token_hex", return_value="1234abcd"):
             state, clock, marker = exchange(port, trial, "READ")
         self.assertEqual((state, clock[0], marker), ("MARKED", 700, [660, 12, -55]))
 
@@ -97,7 +97,7 @@ class WalkTests(TestCase):
             self.assertEqual(client.get("/walk-away", environ_base={"REMOTE_ADDR": "192.0.2.1"}).status_code, 403)
 
     def test_capture_saves_before_acknowledging_board(self):
-        from tracehub import walk_capture as capture
+        from tracehub.walk import capture
         t = fixture(7100)
         observer = Mock(session=1, error=None)
         observer.snapshot.return_value = t["events"]

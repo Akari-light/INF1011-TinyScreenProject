@@ -4,11 +4,11 @@ from pathlib import Path
 from flask import Flask
 
 from . import database
-from .walk_view import walk_blueprint
 from .badusb_upload import badusb_upload_blueprint
 from .loot_receiver import load_helper_tokens, loot_receiver_blueprint
-from .ops_dashboard import dashboard_blueprint
+from .dashboard.views import dashboard_blueprint
 from .reverse_shell import reverse_shell_blueprint, start_reverse_shell_listener
+from .walk.views import walk_blueprint
 
 
 def create_app(server_role="dashboard"):

@@ -180,6 +180,6 @@ For the assessment, film the marked doorway, the physical OLED confirmation and 
 ## Repository layout
 
 - `firmware/TraceDeck/` contains the Arduino sketch, shared UI and input code, BadUSB under `src/badusb/`, and the scanner, walk-away audit and desk beacon under `src/bluetooth/`.
-- `tracehub/` contains the Flask factory, listener modules, shared SQLite storage, templates, and the redesigned console assets on main.
+- `tracehub/__init__.py` holds the Flask application factory. `dashboard/` contains the Ops Console routes, and `walk/` contains the walk-away routes, trial evaluation, and Windows capture. The documented `tracehub.walk_capture` command calls the capture module. Shared SQLite code is in `database.py`, HTML templates are under `templates/`, and shared console assets are under `static/`.
 
 Record build checks and physical rehearsal results separately. Preserve upstream licenses and attribute reused material in the source and video.
