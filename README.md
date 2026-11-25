@@ -1,15 +1,12 @@
 # TraceDeck
 
-TraceDeck is an SIT AY26 ICT1011 proof of concept (POC) built with a TinyScreen+ and a Windows application called **TraceHub**. 
-It demonstrates two everyday security risks: plugging in an unfamiliar USB device and leaving a workstation unlocked.
+TraceDeck is an ICT1011 proof of concept built with a TinyScreen+ and a Windows application called **TraceHub**. It demonstrates two everyday security risks: plugging in an unfamiliar USB device and leaving a workstation unlocked.
 
-- **USB keyboard emulation.** Drop & Upload demonstrates that a USB device can present itself as a keyboard. TraceHub provides independent evidence that a synthetic test upload arrived.
+- **USB keyboard emulation.** The handheld acts as a keyboard to run Drop & Upload, De-Shield, Pwning (a reverse shell), and Edge-Jar / Chrm-Jar (cookie-key recovery). TraceHub provides independent evidence of each result.
 - **Bluetooth LE.** The handheld displays nearby advertisements. A second board can act as a desk beacon for the walk-away audit, which compares a doorway button press with a Windows session-lock event.
 - **TraceHub.** The Flask and SQLite application provides a searchable Loot Log, text and image previews from ZIP files, original-file downloads, and a view of saved walk-away trials.
 
-## **Educational Purposes Only.** 
-Use only authorized equipment, synthetic data, and an isolated lab network. 
-Do not use this project for unauthorized access or malicious activity.
+**Educational use.** Use only authorized equipment, synthetic data, and an isolated lab network. Do not use this project for unauthorized access or malicious activity.
 
 ## Hardware and software
 
@@ -17,7 +14,7 @@ Do not use this project for unauthorized access or malicious activity.
 | --- | --- |
 | USB node | TinyScreen+ ASM2022, Micro-USB data cable, and a charged battery for disconnected operation |
 | BLE observation | ASD2116-R ST BLE TinyShield on the same TinyScreen+ and an owned BLE advertiser for address-level inspection |
-| TraceHub server | Windows with Python 3.11+ to run the upload listener and Ops Console |
+| TraceHub server | Windows with Python 3.11 to run the upload listener and Ops Console |
 | Arduino toolchain | Arduino CLI 1.5.1, Arduino SAMD 1.8.14, TinyCircuits SAMD 1.1.0, TinyScreen 1.1.0, Arduino Keyboard 1.0.7, and TinyCircuits STBLE 0.1.0 |
 
 ## Set up the TraceHub server
@@ -59,6 +56,45 @@ $traceDeckPython = Join-Path $env:LOCALAPPDATA 'TraceDeck\venv\Scripts\python.ex
 The request limit is 8 MiB including form overhead. ZIPs are limited to 100 entries and 16 MiB of expanded data. An identical retry with the same submission ID reuses the loot ID. A conflicting submission is rejected before writing a new archive. The separate authenticated HTTPS text receiver records a client-reported hostname for enrolled helpers.
 
 The app roles share `%LOCALAPPDATA%\TraceDeck\tracehub.sqlite3`. The same directory holds originals in `archives/` and walk journals in `walk-trials/`. Stop the listeners and capture processes before backing up those items together. Keep runtime data, credentials, and certificates out of Git.
+
+## BadUSB payloads
+
+Open **Home → BadUSB → Payloads** on the handheld. A payload whose `showDisabledPayload` guard is still active shows as disabled and does nothing; remove that guard in the payload's `.cpp` before running it.
+
+| Payload | What it does | Network target | Build flag |
+| --- | --- | --- | --- |
+| Drop & Upload | Writes a marker file, then zips `Documents\Test_Important` and uploads it | `/badusb/upload` on `:8080` | `TRACEHUB_SERVER_IP` |
+| De-Shield | Sets UAC to "never notify", then re-enables Virus & Threat Protection | none | none |
+| Pwning | Opens a reverse shell back to the operator | raw TCP `:4444` | `ATTACKER_IP` |
+| Edge-Jar | Recovers Edge's DPAPI AES key and lists still-encrypted cookies | `/badusb/upload` on `:8080` | `TRACEHUB_SERVER_IP` |
+| Chrm-Jar | Same as Edge-Jar, for Chrome | `/badusb/upload` on `:8080` | `TRACEHUB_SERVER_IP` |
+| Payload | Placeholder entry | none | none |
+
+Compile the network-dependent payloads with the server address:
+
+```powershell
+arduino-cli compile --fqbn TinyCircuits:samd:tinyscreen firmware/TraceDeck `
+  --build-property "compiler.cpp.extra_flags=-DTRACEHUB_SERVER_IP=<server> -DATTACKER_IP=<server>"
+```
+
+Drop & Upload and the cookie jars read `TRACEHUB_SERVER_IP`; Pwning reads `ATTACKER_IP`.
+
+### Reverse shell (Pwning)
+
+Start TraceHub with the shell listener reachable from the victim laptop, then flash Pwning with `-DATTACKER_IP=<server>`:
+
+```powershell
+$env:TRACEDECK_SHELL_HOST = '0.0.0.0'   # or the lab subnet IP
+& $python -m flask --app "tracehub:create_app('demo')" --no-debug run --host 0.0.0.0 --port 8080
+```
+
+The `demo` role runs the Ops Console, the upload endpoint, the reverse-shell console, and the walk-away view in one process. The reverse shell itself listens on port `4444`, separate from the HTTP port. Open the **Reverse Shell** workspace to watch the callback and send commands.
+
+### Cookie jars (Edge-Jar / Chrm-Jar)
+
+The jars run a "half-step" demonstration: they recover the browser's DPAPI-protected AES master key and enumerate the cookie database **without decrypting** any cookie, so no plaintext session token leaves the machine. The report uploads as `edge_cookie_dump.txt` or `chrome_cookies_dump.txt`.
+
+The target machine needs internet access (for `Install-Module PSSQLite`, which also installs the NuGet provider), UAC at the default "notify" level, and the browser installed with an existing cookie database. The payload force-closes the browser, opens an elevated PowerShell window, uploads the report, then closes the window. Undo the settings it changes before leaving the lab (see Clean up after the demo).
 
 ## Prepare the handheld for Bluetooth
 
@@ -122,6 +158,16 @@ For the assessment, film the marked doorway, the physical OLED confirmation and 
 
 Unplug the handheld and stop local services with Ctrl+C. Restore the Windows settings and phone pairing changed for the demo. Review demo-created Desktop files, temporary archives, and any firewall exceptions added for the lab. Preserve original sample files and any evidence needed for assessment. Restore any overwritten files from a pre-demo backup.
 
+After running Edge-Jar or Chrm-Jar, undo the settings they change on the target machine:
+
+```powershell
+Set-ExecutionPolicy -Scope LocalMachine -ExecutionPolicy <original>
+Uninstall-Module -Name PSSQLite -Force -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force "$env:ProgramFiles\PackageManagement\ProviderAssemblies\NuGet" -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force "$env:LOCALAPPDATA\PackageManagement\ProviderAssemblies\NuGet" -ErrorAction SilentlyContinue
+Remove-Item -Force "$env:TEMP\edge_cookie_dump.txt","$env:TEMP\chrome_cookies_dump.txt" -ErrorAction SilentlyContinue
+```
+
 ## Verification
 
 Run the existing Windows tests from the repository root.
@@ -135,7 +181,8 @@ The suite covers walk-audit timing, incomplete observations, and evidence storag
 
 ## Repository layout
 
-- `firmware/TraceDeck/` contains the Arduino sketch, shared UI and input code, BadUSB under `src/badusb/`, and the scanner, walk-away audit and desk beacon under `src/bluetooth/`.
+- `firmware/TraceDeck/` contains the Arduino sketch, shared UI and input code, the BadUSB payloads under `src/badusb/payloads/` (Drop & Upload, De-Shield, Pwning, Edge-Jar, Chrm-Jar, and a Payload stub), and the scanner, walk-away audit and desk beacon under `src/bluetooth/`.
+- `scripts/` holds reference copies of the payload sources and the original Duckyscript research, kept outside the compiled sketch.
 - `tracehub/__init__.py` holds the Flask application factory. `dashboard/` contains the Ops Console routes, and `walk/` contains the walk-away routes, trial evaluation, and Windows capture. The documented `tracehub.walk_capture` command calls the capture module. Shared SQLite code is in `database.py`, HTML templates are under `templates/`, and shared console assets are under `static/`.
 - `badusb_upload.py` receives browser file uploads, `loot_receiver.py` handles the separate credentialed HTTPS text receiver, and `reverse_shell.py` owns the raw TCP sessions and local shell console routes. These modules are under `tracehub/`.
 - `tests/` contains the existing automated walk-audit checks.
